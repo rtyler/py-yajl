@@ -4,6 +4,8 @@ from distutils.core import setup, Extension
 base_modules = [
     Extension('yajl', [
                 'yajl.c',
+                'encoder.c',
+                'decoder.c',
             ],
             libraries=['yajl'],
             extra_compile_args=['-Wall', '-Werror', '-I../src/api']),

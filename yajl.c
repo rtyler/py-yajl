@@ -37,6 +37,12 @@
 
 #include "py_yajl.h"
 
+static PyMethodDef yajldecoder_methods[] = {
+    {"decode", (PyCFunction)(py_yajldecoder_decode), METH_VARARGS, NULL},
+    {"raw_decode", (PyCFunction)(py_yajldecoder_raw_decode), METH_VARARGS, NULL},
+    {NULL}
+};
+
 static PyTypeObject YajlDecoderType = {
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
@@ -59,14 +65,51 @@ static PyTypeObject YajlDecoderType = {
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
     Py_TPFLAGS_DEFAULT,        /*tp_flags*/
-    "Yajl-based decoder",           /* tp_doc */
+    "Yajl-based decoder",      /* tp_doc */
+    0,                     /* tp_traverse */
+    0,                     /* tp_clear */
+    0,                     /* tp_richcompare */
+    0,                     /* tp_weaklistoffset */
+    0,                     /* tp_iter */
+    0,                     /* tp_iternext */
+    yajldecoder_methods,  /* tp_methods */
+    NULL,                 /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)(yajldecoder_init),/* tp_init */
+    0,                         /* tp_alloc */
+}; 
+
+static PyTypeObject YajlEncoderType = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "yajl.YajlEncoder",        /*tp_name*/
+    sizeof(_YajlEncoder),      /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    0,                         /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
+    "Yajl-based encoder",      /* tp_doc */
 }; 
 
 /*
-static PyMethodDef yajldecoder_methods[] = {
-    {NULL}
-};
-
 static yajl_callbacks callbacks = {
     reformat_null,
     reformat_boolean,
@@ -90,11 +133,19 @@ static struct PyMethodDef yajl_methods[] = {
 PyMODINIT_FUNC inityajl(void)
 {
     PyObject *module = Py_InitModule3("yajl", yajl_methods, NULL);
+
     YajlDecoderType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&YajlDecoderType) < 0)
         return;
 
     Py_INCREF(&YajlDecoderType);
     PyModule_AddObject(module, "YajlDecoder", (PyObject *)(&YajlDecoderType));
+
+    YajlEncoderType.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&YajlEncoderType) < 0)
+        return;
+
+    Py_INCREF(&YajlEncoderType);
+    PyModule_AddObject(module, "YajlEncoder", (PyObject *)(&YajlEncoderType));
 }
 

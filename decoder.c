@@ -30,36 +30,21 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */ 
 
-#ifndef _PY_YAJL_H_
-#define _PY_YAJL_H_
-
 #include <Python.h>
 
-typedef struct {
-    PyObject_HEAD
-    /* Type-specifics */
-} _YajlDecoder;
+#include "py_yajl.h"
 
-typedef struct {
-    PyObject_HEAD
-    /* type specifics */
-} _YajlEncoder;
+PyObject *py_yajldecoder_decode(PYARGS)
+{
+    return NULL;
+}
 
-#define PYARGS PyObject *self, PyObject *args, PyObject *kwargs
+PyObject *py_yajldecoder_raw_decode(PYARGS)
+{
+    return NULL;
+}
 
-
-/*
- * Methods defined for the YajlDecoder type in decoder.c
- */
-extern PyObject *py_yajldecoder_decode(PYARGS);
-extern PyObject *py_yajldecoder_raw_decode(PYARGS);
-extern int yajldecoder_init(PYARGS);
-
-
-/*
- * Methods defined for the YajlEncoder type in encoder.c
- */
-extern PyObject *py_yajlencoder_encode(PYARGS);
-
-#endif
-
+int yajldecoder_init(PYARGS)
+{
+    return -1;
+}
