@@ -58,7 +58,7 @@ PyObject *LastElement(_YajlDecoder *self)
 int PlaceObject(_YajlDecoder *self, PyObject *object)
 {
     PyObject *root = LastElement(self);
-    
+
     if (root == NULL) {
         PyList_Append(self->elements, object);
         return success;
@@ -172,9 +172,15 @@ int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
 int handle_end_dict(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
+    PyObject *last;
+
     if (!self->elements)
         return failure;
-    return success;
+
+    last = PyObject_CallMethodObjArgs(self->elements,
+            PyString_FromString("pop"), NULL);
+
+    return PlaceObject(self, last);
 }
 
 int handle_start_list(void *ctx)
@@ -192,9 +198,15 @@ int handle_start_list(void *ctx)
 int handle_end_list(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
+    PyObject *last;
+
     if (!self->elements)
         return failure;
-    return success;
+
+    last = PyObject_CallMethodObjArgs(self->elements,
+            PyString_FromString("pop"), NULL);
+
+    return PlaceObject(self, last);
 }
 
 static yajl_callbacks decode_callbacks = {
