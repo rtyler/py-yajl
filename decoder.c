@@ -123,7 +123,7 @@ int handle_double(void *ctx, double value)
 int handle_number(void *ctx, const char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyInt_FromString((char *)(value), NULL, 0);
+    PyObject *object = PyInt_FromString((char *)(value), NULL, 10);
 
     return PlaceObject(self, object);
 }
@@ -229,7 +229,6 @@ PyObject *py_yajldecoder_decode(PYARGS)
     parser = yajl_alloc(&decode_callbacks, &config, NULL, (void *)(self));
 
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
-    fprintf(stderr, "yrc: %s\n", yajl_status_to_string(yrc));
     yajl_parse_complete(parser);
 
     if (yrc != yajl_status_ok) {
