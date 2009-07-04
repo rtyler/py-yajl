@@ -29,10 +29,6 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */ 
-
-#include <yajl/yajl_parse.h>
-#include <yajl/yajl_gen.h>
-
 #include <Python.h>
 
 #include "py_yajl.h"
@@ -109,22 +105,6 @@ static PyTypeObject YajlEncoderType = {
     "Yajl-based encoder",      /* tp_doc */
 }; 
 
-/*
-static yajl_callbacks callbacks = {
-    reformat_null,
-    reformat_boolean,
-    NULL,
-    NULL,
-    reformat_number,
-    reformat_string,
-    reformat_start_map,
-    reformat_map_key,
-    reformat_end_map,
-    reformat_start_array,
-    reformat_end_array
-};
-*/
-
 
 static struct PyMethodDef yajl_methods[] = {
     {NULL}
@@ -139,13 +119,13 @@ PyMODINIT_FUNC inityajl(void)
         return;
 
     Py_INCREF(&YajlDecoderType);
-    PyModule_AddObject(module, "YajlDecoder", (PyObject *)(&YajlDecoderType));
+    PyModule_AddObject(module, "Decoder", (PyObject *)(&YajlDecoderType));
 
     YajlEncoderType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&YajlEncoderType) < 0)
         return;
 
     Py_INCREF(&YajlEncoderType);
-    PyModule_AddObject(module, "YajlEncoder", (PyObject *)(&YajlEncoderType));
+    PyModule_AddObject(module, "Encoder", (PyObject *)(&YajlEncoderType));
 }
 
