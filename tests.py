@@ -27,6 +27,11 @@ class BasicJSONTests(unittest.TestCase):
     def test_Dict(self):
         self.assertDecodesTo('{"key" : "pair"}', {'key' : 'pair'})
 
+    def test_NestedDict(self):
+        self.assertDecodesTo('''
+            {"key" : [1, 2, 3]}
+        ''', {'key' : [1, 2, 3]})
+
 
 if __name__ == '__main__':
     unittest.main()
