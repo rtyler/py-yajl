@@ -32,10 +32,106 @@
 
 #include <Python.h>
 
+#include <yajl/yajl_parse.h>
+#include <yajl/yajl_gen.h>
+
 #include "py_yajl.h"
+
+int handle_null(void *ctx)
+{
+    return -1;
+}
+
+int handle_int(void *ctx, long value)
+{
+    return -1;
+}
+
+int handle_bool(void *ctx, int value)
+{
+    return -1;
+}
+
+int handle_double(void *ctx, double value)
+{
+    return -1;
+}
+
+int handle_number(void *ctx, const char *value, unsigned int length)
+{
+    return -1;
+}
+
+int handle_string(void *ctx, const unsigned char *value, unsigned int length)
+{
+    return -1;
+}
+
+int handle_start_dict(void *ctx)
+{
+    return -1;
+}
+
+int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
+{
+    return -1;
+}
+
+int handle_end_dict(void *ctx)
+{
+    return -1;
+}
+
+int handle_start_list(void *ctx)
+{
+    return -1;
+}
+
+int handle_end_list(void *ctx)
+{
+    return -1;
+}
+
+static yajl_callbacks decode_callbacks = {
+    handle_null,
+    handle_bool, 
+    handle_int, 
+    handle_double,
+    handle_number,
+    handle_string,
+    handle_start_dict,
+    handle_dict_key,
+    handle_end_dict,
+    handle_start_list, 
+    handle_end_list
+};
 
 PyObject *py_yajldecoder_decode(PYARGS)
 {
+    char *buffer = NULL;
+    unsigned int buflen = 0;
+    yajl_handle parser = NULL;
+    yajl_status yrc;
+    yajl_parser_config config = { 1, 1 };
+
+    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen))
+        return NULL;
+    
+    if (!buflen) {
+        /* Raise some sort of exception? */
+        return NULL;
+    }
+
+    /* callbacks, config, allocfuncs */
+    parser = yajl_alloc(&decode_callbacks, &config, NULL, (void *)(self));
+
+    yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
+
+    if (yrc != yajl_status_ok) {
+        /* Raise some sort of exception */
+        return NULL;
+    }
+
     return NULL;
 }
 
@@ -46,5 +142,5 @@ PyObject *py_yajldecoder_raw_decode(PYARGS)
 
 int yajldecoder_init(PYARGS)
 {
-    return -1;
+    return 0;
 }
