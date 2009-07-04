@@ -30,6 +30,8 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */ 
 
+#include <string.h>
+
 #include <Python.h>
 
 #include <yajl/yajl_parse.h>
@@ -123,8 +125,15 @@ int handle_double(void *ctx, double value)
 int handle_number(void *ctx, const char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyInt_FromString((char *)(value), NULL, 10);
+    char *number = (char *)(malloc(sizeof(char) * (length + 1)));
+    PyObject *string, *object;
 
+    number = strncpy(number, value, length);
+    number[length] = '\0';
+    string = PyString_FromStringAndSize(number, length);
+
+    object = PyFloat_FromString(string, NULL);
+    
     return PlaceObject(self, object);
 }
 

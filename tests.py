@@ -24,6 +24,9 @@ class BasicJSONTests(unittest.TestCase):
     def test_List(self):
         self.assertDecodesTo('[1,2]', [1, 2])
 
+    def test_ListOfFloats(self):
+        self.assertDecodesTo('[3.14, 2.718]', [3.14, 2.718])
+
     def test_Dict(self):
         self.assertDecodesTo('{"key" : "pair"}', {'key' : 'pair'})
 
