@@ -35,5 +35,10 @@ class BasicJSONTests(unittest.TestCase):
             {"key" : [1, 2, 3]}
         ''', {'key' : [1, 2, 3]})
 
+    def test_DictInDict(self):
+        self.assertDecodesTo('''
+            {"key" : {"subkey" : true}}''',
+                {'key' : {'subkey' : True}})
+
 if __name__ == '__main__':
     unittest.main()
