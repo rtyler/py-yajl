@@ -40,5 +40,18 @@ class BasicJSONTests(unittest.TestCase):
             {"key" : {"subkey" : true}}''',
                 {'key' : {'subkey' : True}})
 
+class ErrorCasesTests(unittest.TestCase):
+    def setUp(self):
+        self.d = yajl.Decoder()
+
+    def test_EmptyString(self):
+        rc = self.d.decode('')
+        print ('rc', rc)
+
+    def test_None(self):
+        rc = self.d.decode(None)
+        print ('rc', rc)
+
+
 if __name__ == '__main__':
     unittest.main()
