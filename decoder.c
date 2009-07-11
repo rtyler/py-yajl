@@ -57,6 +57,9 @@ PyObject *LastElement(_YajlDecoder *self)
 
 int PlaceObject(_YajlDecoder *self, PyObject *object)
 {
+    if (self->key)
+        fprintf(stderr, "PlaceObject, key: %s\n", PyString_AsString(self->key));
+
     PyObject *root = LastElement(self);
 
     if (root == NULL) {
@@ -153,15 +156,19 @@ int handle_start_dict(void *ctx)
     if (!object)
         return failure;
 
-    PyList_Append(self->elements, object);
-    return success;
+    return PlaceObject(self, object);
 }
 
 int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyString_FromStringAndSize((char *)(value), length);
+    PyObject *object = NULL;
+    char *key = (char *)(malloc(sizeof(char) * (length + 1)));
 
+    key = strncpy(key, (char *)(value), length);
+    key[length] = '\0';
+
+    object = PyString_FromStringAndSize(key, length);
     if (!object)
         return failure;
 
@@ -252,11 +259,15 @@ PyObject *py_yajldecoder_decode(PYARGS)
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
     yajl_parse_complete(parser);
 
+    PyObject *s = PyObject_Str(decoder->elements);
+    fprintf(stderr, "FOOOOO: %s\n", PyString_AsString(s));
+    
+
     if (yrc != yajl_status_ok) {
         /* Raise some sort of exception */
         return NULL;
     }
-    
+
     root = PyList_GetItem(decoder->elements, 0);
     if (!root) 
         return NULL;
