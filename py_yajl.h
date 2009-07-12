@@ -39,7 +39,8 @@ typedef struct {
     PyObject_HEAD
 
     PyObject *elements;
-    PyObject *key;
+    PyObject *keys;
+    PyObject *root;
 
 } _YajlDecoder;
 
