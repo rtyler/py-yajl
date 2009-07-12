@@ -6,10 +6,18 @@ base_modules = [
                 'yajl.c',
                 'encoder.c',
                 'decoder.c',
+                'yajl/src/yajl_alloc.c',
+                'yajl/src/yajl_buf.c',
+                'yajl/src/yajl.c',
+                'yajl/src/yajl_encode.c',
+                'yajl/src/yajl_gen.c',
+                'yajl/src/yajl_lex.c',
+                'yajl/src/yajl_parser.c',
             ],
-            libraries=['yajl'],
-            extra_compile_args=['-Wall', '-Werror', '-I../src/api']),
-]
+            include_dirs=['includes/'],
+            extra_compile_args=['-Wall', '-Werror']),
+        ]
+
 
 packages = ['yajl']
 
