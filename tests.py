@@ -66,6 +66,13 @@ class BasicJSONEncodeTests(unittest.TestCase):
     def test_List(self):
         self.assertEncodesTo([1,2], '[1,2]')
 
+    def test_Dict(self):
+        self.assertEncodesTo({'key' : 'value'}, '{"key":"value"}')
+
+    def test_NestedDictAndList(self):
+        self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
+            '{"key":{"subkey":[1,2,3]}}')
+
 class ErrorCasesTests(unittest.TestCase):
     def setUp(self):
         self.d = yajl.Decoder()

@@ -52,8 +52,14 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     if (object == Py_False) {
         return yajl_gen_bool(handle, 0);
     }
+    if (PyString_Check(object)) {
+        const unsigned char *buffer;
+        int length;
+        PyString_AsStringAndSize(object, (char **)&buffer, &length);
+
+        return yajl_gen_string(handle, buffer, (unsigned int)(length));
+    }
     if (PyInt_Check(object)) {
-        fprintf(stderr, "int\n");
         return yajl_gen_integer(handle, PyInt_AsLong(object));
     }
     if (PyLong_Check(object)) {
@@ -79,7 +85,17 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         return status;
     }
     if (PyDict_Check(object)) {
+        PyObject *key, *value;
+        int position = 0;
+
+        status = yajl_gen_map_open(handle);
+        while (PyDict_Next(object, &position, &key, &value)) {
+            status = ProcessObject(self, key);
+            status = ProcessObject(self, value);
+        }
+        return yajl_gen_map_close(handle);
     }
+
         
     exit:
         return yajl_gen_in_error_state;
