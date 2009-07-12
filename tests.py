@@ -2,7 +2,7 @@ import unittest
 
 import yajl
 
-class BasicJSONTests(unittest.TestCase):
+class BasicJSONDecodeTests(unittest.TestCase):
     def setUp(self):
         self.d = yajl.Decoder()
 
@@ -44,6 +44,27 @@ class BasicJSONTests(unittest.TestCase):
         self.assertDecodesTo('''
             {"key" : {"subkey" : [1, 2, 3]}}''',
                 {'key' : {'subkey' : [1,2,3]}})
+
+class BasicJSONEncodeTests(unittest.TestCase):
+    def setUp(self):
+        self.e = yajl.Encoder()
+
+    def assertEncodesTo(self, value, json):
+        rc = self.e.encode(value)
+        assert rc == json, ('Failed to encode JSON correctly', locals())
+        return True
+
+    def test_TrueBool(self):
+        self.assertEncodesTo(True, 'true')
+
+    def test_FalseBool(self):
+        self.assertEncodesTo(False, 'false')
+
+    def test_Null(self):
+        self.assertEncodesTo(None, 'null')
+
+    def test_List(self):
+        self.assertEncodesTo([1,2], '[1,2]')
 
 class ErrorCasesTests(unittest.TestCase):
     def setUp(self):

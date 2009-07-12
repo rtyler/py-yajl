@@ -47,10 +47,12 @@ typedef struct {
 typedef struct {
     PyObject_HEAD
     /* type specifics */
+    void *_generator;
 } _YajlEncoder;
 
 #define PYARGS PyObject *self, PyObject *args, PyObject *kwargs
 
+enum { failure, success };
 
 /*
  * Methods defined for the YajlDecoder type in decoder.c
@@ -64,6 +66,7 @@ extern int yajldecoder_init(PYARGS);
  * Methods defined for the YajlEncoder type in encoder.c
  */
 extern PyObject *py_yajlencoder_encode(PYARGS);
+extern int yajlencoder_init(PYARGS);
 
 #endif
 
