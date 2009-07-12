@@ -39,7 +39,6 @@
 
 #include "py_yajl.h"
 
-enum { failure, success };
 
 static void Push(PyObject *stack, PyObject *element)
 {
@@ -110,7 +109,7 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 }
 
 
-int handle_null(void *ctx)
+static int handle_null(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = Py_None;
@@ -126,7 +125,7 @@ int handle_null(void *ctx)
     return failure;
 }
 
-int handle_int(void *ctx, long value)
+static int handle_int(void *ctx, long value)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyInt_FromLong(value);
@@ -134,7 +133,7 @@ int handle_int(void *ctx, long value)
     return PlaceObject(self, object);
 }
 
-int handle_bool(void *ctx, int value)
+static int handle_bool(void *ctx, int value)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyBool_FromLong((long)(value));
@@ -142,7 +141,7 @@ int handle_bool(void *ctx, int value)
     return PlaceObject(self, object);
 }
 
-int handle_double(void *ctx, double value)
+static int handle_double(void *ctx, double value)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyFloat_FromDouble(value);
@@ -150,7 +149,7 @@ int handle_double(void *ctx, double value)
     return PlaceObject(self, object);
 }
 
-int handle_number(void *ctx, const char *value, unsigned int length)
+static int handle_number(void *ctx, const char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     char *number = (char *)(malloc(sizeof(char) * (length + 1)));
@@ -165,7 +164,7 @@ int handle_number(void *ctx, const char *value, unsigned int length)
     return PlaceObject(self, object);
 }
 
-int handle_string(void *ctx, const unsigned char *value, unsigned int length)
+static int handle_string(void *ctx, const unsigned char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyString_FromStringAndSize((char *)(value), length);
@@ -173,7 +172,7 @@ int handle_string(void *ctx, const unsigned char *value, unsigned int length)
     return PlaceObject(self, object);
 }
 
-int handle_start_dict(void *ctx)
+static int handle_start_dict(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyDict_New();
@@ -185,7 +184,7 @@ int handle_start_dict(void *ctx)
     return success;;
 }
 
-int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
+static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = NULL;
@@ -202,7 +201,7 @@ int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
     return success;
 }
 
-int handle_end_dict(void *ctx)
+static int handle_end_dict(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *last, *popped;
@@ -234,7 +233,7 @@ int handle_end_dict(void *ctx)
     return _PlaceObject(self, last, popped);
 }
 
-int handle_start_list(void *ctx)
+static int handle_start_list(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyList_New(0);
@@ -246,7 +245,7 @@ int handle_start_list(void *ctx)
     return success;
 }
 
-int handle_end_list(void *ctx)
+static int handle_end_list(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *last, *popped;
@@ -348,7 +347,6 @@ int yajldecoder_init(PYARGS)
 {
     _YajlDecoder *me = (_YajlDecoder *)(self);
 
-    /* Set to NULL so the parser callbacks will function properly */
     me->elements = PyList_New(0);
     me->keys = PyList_New(0);
     me->root = NULL;
