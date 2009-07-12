@@ -40,6 +40,11 @@ class BasicJSONTests(unittest.TestCase):
             {"key" : {"subkey" : true}}''',
                 {'key' : {'subkey' : True}})
 
+    def test_NestedDictAndList(self):
+        self.assertDecodesTo('''
+            {"key" : {"subkey" : [1, 2, 3]}}''',
+                {'key' : {'subkey' : [1,2,3]}})
+
 class ErrorCasesTests(unittest.TestCase):
     def setUp(self):
         self.d = yajl.Decoder()
