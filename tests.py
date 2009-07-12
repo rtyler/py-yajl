@@ -50,12 +50,10 @@ class ErrorCasesTests(unittest.TestCase):
         self.d = yajl.Decoder()
 
     def test_EmptyString(self):
-        rc = self.d.decode('')
-        print ('rc', rc)
+        self.failUnlessRaises(ValueError, self.d.decode, '')
 
     def test_None(self):
-        rc = self.d.decode(None)
-        print ('rc', rc)
+        self.failUnlessRaises(ValueError, self.d.decode, None)
 
 
 if __name__ == '__main__':

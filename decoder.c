@@ -297,8 +297,8 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
 
     if (!buflen) {
-        /* Raise some sort of exception? */
-        fprintf(stderr, "`buflen` == NULL\n");
+        PyErr_SetObject(PyExc_ValueError, 
+                PyString_FromString("Cannot parse an empty buffer"));
         return NULL;
     }
 
@@ -325,13 +325,14 @@ PyObject *py_yajldecoder_decode(PYARGS)
     
 
     if (yrc != yajl_status_ok) {
-        /* Raise some sort of exception */
-        fprintf(stderr, "FAIL : %s\n", yajl_status_to_string(yrc));
+        PyErr_SetObject(PyExc_ValueError, 
+                PyString_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
 
     if (decoder->root == NULL) {
-        fprintf(stderr, "FAIL : %s\n", yajl_status_to_string(yrc));
+        PyErr_SetObject(PyExc_ValueError, 
+                PyString_FromString("The root object is NULL"));
         return NULL;
     }
     
