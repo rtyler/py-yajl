@@ -126,8 +126,19 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 }; 
 
+static PyObject *py_encode(PYARGS)
+{
+    return NULL;
+}
+
+static PyObject *py_decode(PYARGS)
+{
+    return NULL;
+}
 
 static struct PyMethodDef yajl_methods[] = {
+    {"encode", (PyCFunction)(py_encode), METH_VARARGS, NULL},
+    {"decode", (PyCFunction)(py_decode), METH_VARARGS, NULL},
     {NULL}
 };
 
