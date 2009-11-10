@@ -43,7 +43,7 @@ contenders = [
     #('bson', (BSON.from_dict, lambda x: BSON(x).to_dict())),
     #('wbin', (wbin.serialize, wbin.deserialize)),
     #('cPickle', (cPickle.dumps, cPickle.loads)),
-    ('yajl', (lambda x: yajl.Encoder().encode(x), lambda x: yajl.Decoder().decode(x))),
+    ('yajl', (yajl.Encoder().encode, yajl.Decoder().decode)),
     ('cjson', (cjson.encode, cjson.decode)),
     ('simplejson', (simplejson.dumps, simplejson.loads)),
 ]
