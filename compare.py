@@ -1,12 +1,19 @@
 import time
 
-#from pymongo.bson import BSON
-#from mod import wbin
-import cPickle
 import pickle
 import yajl
-import cjson
-import simplejson
+try:
+    import cjson
+except ImportError:
+    cjson = None
+try:
+    import simplejson
+except ImportError:
+    simplejson = None
+try:
+    import json
+except ImportError:
+    json = None
 
 default_data = {
     "name": "Foo",
@@ -39,17 +46,17 @@ def test(serial, deserial, data=None):
 
 
 contenders = [
-    # ('pickle', (pickle.dumps, pickle.loads)),
-    #('bson', (BSON.from_dict, lambda x: BSON(x).to_dict())),
-    #('wbin', (wbin.serialize, wbin.deserialize)),
-    #('cPickle', (cPickle.dumps, cPickle.loads)),
     ('yajl', (yajl.Encoder().encode, yajl.Decoder().decode)),
-    ('cjson', (cjson.encode, cjson.decode)),
-    ('simplejson', (simplejson.dumps, simplejson.loads)),
 ]
+if cjson:
+    contenders.append(('cjson', (cjson.encode, cjson.decode)))
+if simplejson:
+    contenders.append(('simplejson', (simplejson.dumps, simplejson.loads)))
+if json:
+    contenders.append(('stdlib json', (json.dumps, json.loads)))
 
 for name, args in contenders:
     test(*args)
     x, y = profile(*args)
-    print "%-10s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+    print "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
         name, x, y, x+y)
