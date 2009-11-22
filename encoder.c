@@ -54,7 +54,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     }
     if (PyString_Check(object)) {
         const unsigned char *buffer;
-        int length;
+        Py_ssize_t length;
         PyString_AsStringAndSize(object, (char **)&buffer, &length);
 
         return yajl_gen_string(handle, buffer, (unsigned int)(length));
@@ -86,7 +86,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     }
     if (PyDict_Check(object)) {
         PyObject *key, *value;
-        int position = 0;
+        Py_ssize_t position = 0;
 
         status = yajl_gen_map_open(handle);
         while (PyDict_Next(object, &position, &key, &value)) {
