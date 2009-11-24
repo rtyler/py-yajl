@@ -50,7 +50,7 @@ static PyTypeObject YajlDecoderType = {
     "yajl.YajlDecoder",        /*tp_name*/
     sizeof(_YajlDecoder),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
+    (destructor)yajldecoder_dealloc,       /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/
@@ -91,7 +91,7 @@ static PyTypeObject YajlEncoderType = {
     "yajl.YajlEncoder",        /*tp_name*/
     sizeof(_YajlEncoder),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
-    0,                         /*tp_dealloc*/
+    (destructor)yajlencoder_dealloc,       /*tp_dealloc*/
     0,                         /*tp_print*/
     0,                         /*tp_getattr*/
     0,                         /*tp_setattr*/

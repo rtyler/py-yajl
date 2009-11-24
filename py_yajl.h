@@ -60,6 +60,7 @@ enum { failure, success };
 extern PyObject *py_yajldecoder_decode(PYARGS);
 extern PyObject *py_yajldecoder_raw_decode(PYARGS);
 extern int yajldecoder_init(PYARGS);
+extern void yajldecoder_dealloc(_YajlDecoder *self);
 
 
 /*
@@ -67,6 +68,7 @@ extern int yajldecoder_init(PYARGS);
  */
 extern PyObject *py_yajlencoder_encode(PYARGS);
 extern int yajlencoder_init(PYARGS);
+extern void yajlencoder_dealloc(_YajlEncoder *self);
 
 #endif
 

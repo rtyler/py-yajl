@@ -167,6 +167,10 @@ int yajlencoder_init(PYARGS)
 
     if (!me)
         return 1;
-
     return 0;
+}
+
+void yajlencoder_dealloc(_YajlEncoder *self)
+{
+    self->ob_type->tp_free((PyObject*)self);
 }

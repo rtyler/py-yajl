@@ -353,3 +353,11 @@ int yajldecoder_init(PYARGS)
 
     return 0;
 }
+
+void yajldecoder_dealloc(_YajlDecoder *self)
+{
+    Py_XDECREF(self->elements);
+    Py_XDECREF(self->keys);
+    Py_XDECREF(self->root);
+    self->ob_type->tp_free((PyObject*)self);
+}
