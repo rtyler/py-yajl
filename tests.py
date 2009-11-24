@@ -3,11 +3,11 @@ import unittest
 import yajl
 
 class BasicJSONDecodeTests(unittest.TestCase):
-    def setUp(self):
-        self.d = yajl.Decoder()
+    def decode(self, json):
+        return yajl.Decoder().decode(json)
 
     def assertDecodesTo(self, json, value):
-        rc = self.d.decode(json)
+        rc = self.decode(json)
         assert rc == value, ('Failed to decode JSON correctly', 
                 json, value, rc)
         return True
@@ -46,11 +46,11 @@ class BasicJSONDecodeTests(unittest.TestCase):
                 {'key' : {'subkey' : [1,2,3]}})
 
 class BasicJSONEncodeTests(unittest.TestCase):
-    def setUp(self):
-        self.e = yajl.Encoder()
+    def encode(self, value):
+        return yajl.Encoder().encode(value)
 
     def assertEncodesTo(self, value, json):
-        rc = self.e.encode(value)
+        rc = self.encode(value)
         assert rc == json, ('Failed to encode JSON correctly', locals())
         return True
 
@@ -72,6 +72,15 @@ class BasicJSONEncodeTests(unittest.TestCase):
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
             '{"key":{"subkey":[1,2,3]}}')
+
+
+class LoadsTest(BasicJSONDecodeTests):
+    def decode(self, json):
+        return yajl.loads(json)
+
+class DumpsTest(BasicJSONEncodeTests):
+    def encode(self, value):
+        return yajl.dumps(value)
 
 class ErrorCasesTests(unittest.TestCase):
     def setUp(self):
