@@ -1,5 +1,5 @@
 /*
- * Copyright 2009, R. Tyler Ballance <tyler@slide.com>
+ * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
  * 
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -13,7 +13,7 @@
  *     the documentation and/or other materials provided with the
  *     distribution.
  * 
- *  3. Neither the name of R. Tyler Ballancenor the names of its
+ *  3. Neither the name of R. Tyler Ballance nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
  * 

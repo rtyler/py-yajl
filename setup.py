@@ -2,7 +2,7 @@ import os
 from distutils.core import setup, Extension
 
 base_modules = [
-    Extension('yajl', [
+    Extension('yajl',  [ 
                 'yajl.c',
                 'encoder.c',
                 'decoder.c',
@@ -14,12 +14,12 @@ base_modules = [
                 'yajl/src/yajl_lex.c',
                 'yajl/src/yajl_parser.c',
             ],
-            include_dirs=['includes/'],
-            extra_compile_args=['-Wall', '-Werror']),
+            include_dirs=('includes/',),
+            extra_compile_args=['-Wall',]),
         ]
 
 
-packages = ['yajl']
+packages = ('yajl',)
 
 
 setup(
@@ -27,8 +27,7 @@ setup(
     description = '''A CPython module for Yet-Another-Json-Library''',
     version = '1.0',
     author = 'R. Tyler Ballance',
-    author_email = 'tyler@slide.com',
+    author_email = 'tyler@monkeypox.org',
     ext_modules=base_modules,
-    py_modules=[])
-
+)
 
