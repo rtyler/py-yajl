@@ -14,7 +14,7 @@ base_modules = [
                 'yajl/src/yajl_lex.c',
                 'yajl/src/yajl_parser.c',
             ],
-            include_dirs=('includes/',),
+            include_dirs=('includes/', 'yajl/src'),
             extra_compile_args=['-Wall',]),
         ]
 

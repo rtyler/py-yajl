@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 import unittest
 
 import yajl
@@ -68,6 +70,9 @@ class BasicJSONEncodeTests(unittest.TestCase):
 
     def test_Dict(self):
         self.assertEncodesTo({'key' : 'value'}, '{"key":"value"}')
+
+    def test_UnicodeDict(self):
+        self.assertEncodesTo({u'foō' : u'bār'}, '{"fo\\u014d":"b\\u0101r"}')
 
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
