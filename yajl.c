@@ -126,10 +126,14 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 }; 
 
+PyObject *__decode = NULL;
+PyObject *__encode = NULL;
+
 static PyObject *py_loads(PYARGS)
 {
     PyObject *decoder = NULL;
     PyObject *str = NULL;
+    PyObject *result = NULL;
 
     if (!PyArg_ParseTuple(args, "S", &str)) {
         return NULL;
@@ -140,13 +144,19 @@ static PyObject *py_loads(PYARGS)
         return NULL;
     }
 
-    return PyObject_CallMethodObjArgs(decoder, PyString_FromString("decode"), str, NULL);
+    if (__decode == NULL)
+        __decode = PyString_FromString("decode");
+
+    result = PyObject_CallMethodObjArgs(decoder, __decode, str, NULL);
+    Py_XDECREF(decoder);
+    return result;
 }
 
 static PyObject *py_dumps(PYARGS)
 {
     PyObject *encoder = NULL;
     PyObject *obj = NULL;
+    PyObject *result = NULL;
 
     if (!PyArg_ParseTuple(args, "O", &obj)) {
         return NULL;
@@ -157,7 +167,12 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    return PyObject_CallMethodObjArgs(encoder, PyString_FromString("encode"), obj, NULL);
+    if (__encode == NULL)
+        __encode = PyString_FromString("encode");
+
+    result = PyObject_CallMethodObjArgs(encoder, __encode, obj, NULL);
+    Py_XDECREF(encoder);
+    return result;
 }
 
 static struct PyMethodDef yajl_methods[] = {

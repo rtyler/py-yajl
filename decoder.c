@@ -39,6 +39,7 @@
 
 #include "py_yajl.h"
 
+PyObject *__pop = NULL;
 
 static void Push(PyObject *stack, PyObject *element)
 {
@@ -48,7 +49,9 @@ static void Push(PyObject *stack, PyObject *element)
 }
 static PyObject *Pop(PyObject *stack)
 {
-    return PyObject_CallMethodObjArgs(stack, PyString_FromString("pop"), NULL);
+    if (__pop == NULL)
+        __pop = PyString_FromString("pop");
+    return PyObject_CallMethodObjArgs(stack, __pop, NULL);
 }
 static unsigned int Length(PyObject *stack)
 {
@@ -158,8 +161,10 @@ static int handle_number(void *ctx, const char *value, unsigned int length)
     number = strncpy(number, value, length);
     number[length] = '\0';
     string = PyString_FromStringAndSize(number, length);
-
     object = PyFloat_FromString(string, NULL);
+
+    Py_XDECREF(string);
+    free(number);
     
     return PlaceObject(self, object);
 }
@@ -194,6 +199,8 @@ static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int l
     key[length] = '\0';
 
     object = PyString_FromStringAndSize(key, length);
+    free(key);
+
     if (!object)
         return failure;
 
@@ -315,13 +322,6 @@ PyObject *py_yajldecoder_decode(PYARGS)
 
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
     yajl_parse_complete(parser);
-
-    /*
-     * Poor man's debuggery
-    PyObject *s = PyObject_Str(decoder->root);
-    fprintf(stderr, "FOOOOO: %s\n", PyString_AsString(s));
-    */
-    
 
     if (yrc != yajl_status_ok) {
         PyErr_SetObject(PyExc_ValueError, 
