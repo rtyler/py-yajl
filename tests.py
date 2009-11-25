@@ -72,7 +72,7 @@ class BasicJSONEncodeTests(unittest.TestCase):
         self.assertEncodesTo({'key' : 'value'}, '{"key":"value"}')
 
     def test_UnicodeDict(self):
-        self.assertEncodesTo({u'foō' : u'bār'}, '{"fo\\u014d":"b\\u0101r"}')
+        self.assertEncodesTo({u'foō' : u'bār'}, '{"foō":"bār"}')
 
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},

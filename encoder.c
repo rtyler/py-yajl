@@ -56,7 +56,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         return yajl_gen_bool(handle, 0);
     }
     if (PyUnicode_Check(object)) {
-        object = PyUnicode_AsEncodedString(object, "unicode-escape", NULL);
+        object = PyUnicode_AsUTF8String(object);
         decref = 1;
     }
     if (PyString_Check(object)) {
@@ -64,8 +64,9 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         Py_ssize_t length;
         PyString_AsStringAndSize(object, (char **)&buffer, &length);
         status = yajl_gen_string(handle, buffer, (unsigned int)(length));
-        if (decref)
+        if (decref) {
             Py_XDECREF(object);
+        }
         return status;
     }
     if (PyInt_Check(object)) {
@@ -137,21 +138,7 @@ PyObject *py_yajlencoder_encode(PYARGS)
     }
     yrc = yajl_gen_get_buf(generator, &buffer, &buflen);
 
-    /* 
-     * Need to decode the buffer after Yajl is done with it to ensure the
-     * string we get back is correct
-     */
-    if (y_allocs == NULL) {
-        y_allocs = (yajl_alloc_funcs *)(malloc(sizeof(yajl_alloc_funcs)));
-        yajl_set_default_alloc_funcs(y_allocs);
-    }
-
-    yajl_buf *ybuf = yajl_buf_alloc(y_allocs);
-    yajl_string_decode(ybuf, buffer,  buflen);
-
-    result = PyString_FromStringAndSize((const char *)(yajl_buf_data(ybuf)), yajl_buf_len(ybuf));
-
-    yajl_buf_free(ybuf);
+    result = PyString_FromStringAndSize(buffer, buflen);
 
     yajl_gen_free(generator);
     encoder->_generator = NULL;
