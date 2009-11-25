@@ -151,16 +151,12 @@ static int handle_double(void *ctx, double value)
 static int handle_number(void *ctx, const char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    char *number = (char *)(malloc(sizeof(char) * (length + 1)));
     PyObject *string, *object;
 
-    number = strncpy(number, value, length);
-    number[length] = '\0';
-    string = PyString_FromStringAndSize(number, length);
+    string = PyString_FromStringAndSize(value, length);
     object = PyFloat_FromString(string, NULL);
 
     Py_XDECREF(string);
-    free(number);
     
     return PlaceObject(self, object);
 }
@@ -189,13 +185,8 @@ static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int l
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = NULL;
-    char *key = (char *)(malloc(sizeof(char) * (length + 1)));
 
-    key = strncpy(key, (char *)(value), length);
-    key[length] = '\0';
-
-    object = PyString_FromStringAndSize(key, length);
-    free(key);
+    object = PyString_FromStringAndSize(value, length);
 
     if (!object)
         return failure;
