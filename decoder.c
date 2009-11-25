@@ -48,7 +48,7 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
     if (PyList_Check(parent)) {
         PyList_Append(parent, child);
         // child is now owned by parent!
-        Py_XDECREF(child);
+        if (child && child !=Py_None) { Py_XDECREF(child); }
         return success;
     } else if (PyDict_Check(parent)) {
         PyObject* key = py_yajl_ps_current(self->keys);
@@ -56,7 +56,8 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
         py_yajl_ps_pop(self->keys);
         // child is now owned by parent!
         Py_XDECREF(key);
-        Py_XDECREF(child);
+        if (child && child !=Py_None) { Py_XDECREF(child); }
+        
         return success;
     }
     return failure;
@@ -274,10 +275,12 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
     }
     
-    // important! callee owned!
-    Py_XINCREF(decoder->root);
+    // Callee now owns memory, we'll leave refcnt at one and
+    // null out our pointer.
+    PyObject * root = decoder->root;
+    decoder->root = NULL;
 
-    return decoder->root;
+    return root;
 }
 
 PyObject *py_yajldecoder_raw_decode(PYARGS)
@@ -301,6 +304,8 @@ void yajldecoder_dealloc(_YajlDecoder *self)
     py_yajl_ps_init(self->elements);
     py_yajl_ps_free(self->keys);
     py_yajl_ps_init(self->keys);
-    Py_XDECREF(self->root);
+    if (self->root) {
+        Py_XDECREF(self->root);
+    }
     self->ob_type->tp_free((PyObject*)self);
 }
