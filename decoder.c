@@ -261,11 +261,11 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
     }
 
-    if (decoder->elements.stack) {
+    if (decoder->elements.used > 0) {
         py_yajl_ps_free(decoder->elements);
         py_yajl_ps_init(decoder->elements);
     }
-    if (decoder->keys.stack) {
+    if (decoder->keys.used > 0) {
         py_yajl_ps_free(decoder->keys);
         py_yajl_ps_init(decoder->keys);
     }
