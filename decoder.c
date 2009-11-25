@@ -110,11 +110,25 @@ static int handle_number(void *ctx, const char *value, unsigned int length)
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *string, *object;
 
-    string = PyString_FromStringAndSize(value, length);
-    object = PyFloat_FromString(string, NULL);
+    int floaty_char;
 
+    // take a moment here to scan the input string to see if there's
+    // any chars which suggest this is a floating point number
+    for (floaty_char = 0; floaty_char < length; floaty_char++) {
+        switch (value[floaty_char]) {
+            case '.': case 'e': case 'E': goto floatin;
+        }
+    }
+
+  floatin:
+    string = PyString_FromStringAndSize(value, length);
+    if (floaty_char >= length) {
+        object = PyInt_FromString(PyString_AS_STRING(string), NULL, 10);
+    } else {
+        object = PyFloat_FromString(string, NULL);
+    }
     Py_XDECREF(string);
-    
+
     return PlaceObject(self, object);
 }
 
@@ -122,7 +136,6 @@ static int handle_string(void *ctx, const unsigned char *value, unsigned int len
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyString_FromStringAndSize((char *)(value), length);
-
     return PlaceObject(self, object);
 }
 
