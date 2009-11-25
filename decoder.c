@@ -115,16 +115,12 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 static int handle_null(void *ctx)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = Py_None;
     int rc = -1;
 
-    Py_INCREF(Py_None);
-
-    rc = PlaceObject(self, object);
+    rc = PlaceObject(self, Py_None);
 
     if (rc == success)
         return success;
-    Py_DECREF(Py_None);
     return failure;
 }
 
