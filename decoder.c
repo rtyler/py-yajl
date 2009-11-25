@@ -319,9 +319,9 @@ PyObject *py_yajldecoder_decode(PYARGS)
 
     /* callbacks, config, allocfuncs */
     parser = yajl_alloc(&decode_callbacks, &config, NULL, (void *)(self));
-
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
     yajl_parse_complete(parser);
+    yajl_free(parser);
 
     if (yrc != yajl_status_ok) {
         PyErr_SetObject(PyExc_ValueError, 
