@@ -34,12 +34,13 @@
 #define _PY_YAJL_H_
 
 #include <Python.h>
+#include "ptrstack.h"
 
 typedef struct {
     PyObject_HEAD
 
-    PyObject *elements;
-    PyObject *keys;
+    py_yajl_bytestack elements;
+    py_yajl_bytestack keys;
     PyObject *root;
 
 } _YajlDecoder;

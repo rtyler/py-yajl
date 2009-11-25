@@ -30,49 +30,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */ 
 
-#include <string.h>
 
 #include <Python.h>
+
+#include <string.h>
 
 #include <yajl/yajl_parse.h>
 #include <yajl/yajl_gen.h>
 
 #include "py_yajl.h"
-
-PyObject *__pop = NULL;
-
-static void Push(PyObject *stack, PyObject *element)
-{
-    if (!stack)
-        return;
-    PyList_Append(stack, element);
-}
-static PyObject *Pop(PyObject *stack)
-{
-    if (__pop == NULL)
-        __pop = PyString_FromString("pop");
-    return PyObject_CallMethodObjArgs(stack, __pop, NULL);
-}
-static unsigned int Length(PyObject *stack)
-{
-    if (!stack) 
-        return 0;
-    return (unsigned int)(PyList_Size(stack));
-}
-
-static PyObject *LastElement(PyObject *stack)
-{
-    unsigned int length = 0;
-
-    if (!stack)
-        return NULL;
-
-    length = Length(stack);
-    if (!length)
-        return NULL;
-
-    return PyList_GetItem(stack, length - 1);
-}
 
 int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
 {
@@ -81,10 +47,16 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
 
     if (PyList_Check(parent)) {
         PyList_Append(parent, child);
+        // child is now owned by parent!
+        Py_XDECREF(child);
         return success;
-    }
-    if (PyDict_Check(parent)) {
-        PyDict_SetItem(parent, Pop(self->keys), child);
+    } else if (PyDict_Check(parent)) {
+        PyObject* key = py_yajl_ps_current(self->keys);
+        PyDict_SetItem(parent, key, child);
+        py_yajl_ps_pop(self->keys);
+        // child is now owned by parent!
+        Py_XDECREF(key);
+        Py_XDECREF(child);
         return success;
     }
     return failure;
@@ -94,10 +66,10 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 {
     unsigned int length;
 
-    if (self->elements == NULL)
-        return failure;
+    /* if (self->elements == NULL) */
+    /*     return failure; */
 
-    length = Length(self->elements);
+    length = py_yajl_ps_length(self->elements);
 
     if (length == 0) {
         /*
@@ -108,7 +80,7 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
         self->root = object;
         return success;
     }
-    return _PlaceObject(self, LastElement(self->elements), object);
+    return _PlaceObject(self, py_yajl_ps_current(self->elements), object);
 }
 
 
@@ -161,7 +133,7 @@ static int handle_start_dict(void *ctx)
     if (!object)
         return failure;
 
-    Push(self->elements, object);
+    py_yajl_ps_push(self->elements, object);
     return success;;
 }
 
@@ -170,12 +142,12 @@ static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int l
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = NULL;
 
-    object = PyString_FromStringAndSize(value, length);
+    object = PyString_FromStringAndSize((const char *) value, length);
 
-    if (!object)
+    if (NULL == object)
         return failure;
 
-    Push(self->keys, object);
+    py_yajl_ps_push(self->keys, object);
     return success;
 }
 
@@ -185,28 +157,26 @@ static int handle_end_dict(void *ctx)
     PyObject *last, *popped;
     unsigned int length;
 
-    if (!self->elements)
-        return failure;
-
-    length = Length(self->elements);
+    length = py_yajl_ps_length(self->elements);
     if (length == 1) {
         /* 
          * If this is the last element in the stack
          * then it's "root" and we should finish up
          */
-        self->root = Pop(self->elements);
+        self->root = py_yajl_ps_current(self->elements);    
+        py_yajl_ps_pop(self->elements);    
         return success;
+    } else if (length < 2) {
+        return failure;
     }
     
     /*
      * If not, then we should properly add this dict
      * to it's appropriate parent
      */
-    popped = Pop(self->elements);
-    if (!popped) 
-        return failure;
-
-    last = LastElement(self->elements);
+    popped = py_yajl_ps_current(self->elements);    
+    py_yajl_ps_pop(self->elements);    
+    last = py_yajl_ps_current(self->elements);
 
     return _PlaceObject(self, last, popped);
 }
@@ -219,7 +189,7 @@ static int handle_start_list(void *ctx)
     if (!object)
         return failure;
 
-    Push(self->elements, object);
+    py_yajl_ps_push(self->elements, object);
     return success;
 }
 
@@ -229,20 +199,18 @@ static int handle_end_list(void *ctx)
     PyObject *last, *popped;
     unsigned int length;
 
-    if (!self->elements)
-        return failure;
-
-    length = Length(self->elements);
+    length = py_yajl_ps_length(self->elements);
     if (length == 1) {
-        self->root = Pop(self->elements);
+        self->root = py_yajl_ps_current(self->elements);    
+        py_yajl_ps_pop(self->elements);    
         return success;
+    } else if (length < 2) {
+        return failure;
     }
     
-    popped = Pop(self->elements);
-    if (!popped)
-        return failure;
-    
-    last = LastElement(self->elements);
+    popped = py_yajl_ps_current(self->elements);    
+    py_yajl_ps_pop(self->elements);    
+    last = py_yajl_ps_current(self->elements);
 
     return _PlaceObject(self, last, popped);
 }
@@ -279,13 +247,13 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
     }
 
-    if (decoder->elements) {
-        Py_XDECREF(decoder->elements);
-        decoder->elements = PyList_New(0);
+    if (decoder->elements.stack) {
+        py_yajl_ps_free(decoder->elements);
+        py_yajl_ps_init(decoder->elements);
     }
-    if (decoder->keys) {
-        Py_XDECREF(decoder->keys);
-        decoder->keys = PyList_New(0);
+    if (decoder->keys.stack) {
+        py_yajl_ps_free(decoder->keys);
+        py_yajl_ps_init(decoder->keys);
     }
 
     /* callbacks, config, allocfuncs */
@@ -306,6 +274,9 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
     }
     
+    // important! callee owned!
+    Py_XINCREF(decoder->root);
+
     return decoder->root;
 }
 
@@ -317,9 +288,8 @@ PyObject *py_yajldecoder_raw_decode(PYARGS)
 int yajldecoder_init(PYARGS)
 {
     _YajlDecoder *me = (_YajlDecoder *)(self);
-
-    me->elements = PyList_New(0);
-    me->keys = PyList_New(0);
+    py_yajl_ps_init(me->elements);
+    py_yajl_ps_init(me->keys);
     me->root = NULL;
 
     return 0;
@@ -327,8 +297,10 @@ int yajldecoder_init(PYARGS)
 
 void yajldecoder_dealloc(_YajlDecoder *self)
 {
-    Py_XDECREF(self->elements);
-    Py_XDECREF(self->keys);
+    py_yajl_ps_free(self->elements);
+    py_yajl_ps_init(self->elements);
+    py_yajl_ps_free(self->keys);
+    py_yajl_ps_init(self->keys);
     Py_XDECREF(self->root);
     self->ob_type->tp_free((PyObject*)self);
 }
