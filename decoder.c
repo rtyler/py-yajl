@@ -124,26 +124,10 @@ static int handle_null(void *ctx)
     return failure;
 }
 
-static int handle_int(void *ctx, long value)
-{
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyInt_FromLong(value);
-
-    return PlaceObject(self, object);
-}
-
 static int handle_bool(void *ctx, int value)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyBool_FromLong((long)(value));
-
-    return PlaceObject(self, object);
-}
-
-static int handle_double(void *ctx, double value)
-{
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyFloat_FromDouble(value);
 
     return PlaceObject(self, object);
 }
@@ -266,8 +250,8 @@ static int handle_end_list(void *ctx)
 static yajl_callbacks decode_callbacks = {
     handle_null,
     handle_bool, 
-    handle_int, 
-    handle_double,
+    NULL, 
+    NULL,
     handle_number,
     handle_string,
     handle_start_dict,
