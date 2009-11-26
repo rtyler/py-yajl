@@ -70,6 +70,7 @@ extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int
 extern PyObject *py_yajlencoder_encode(PYARGS);
 extern int yajlencoder_init(PYARGS);
 extern void yajlencoder_dealloc(_YajlEncoder *self);
+extern PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj);
 
 #endif
 

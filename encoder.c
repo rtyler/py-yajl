@@ -113,24 +113,20 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 
 yajl_alloc_funcs *y_allocs = NULL;
 
-PyObject *py_yajlencoder_encode(PYARGS)
+PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
 {
-    _YajlEncoder *encoder = (_YajlEncoder *)(self);
-    PyObject *value, *result;
+    PyObject *result = NULL;
     yajl_gen generator = NULL;
     yajl_status yrc;
     const unsigned char *buffer;
     unsigned int buflen = 0;
     yajl_gen_config genconfig = { 0, NULL};
     yajl_gen_status status;
-
-    if (!PyArg_ParseTuple(args, "O", &value))
-        return NULL;
-    
     generator = yajl_gen_alloc(&genconfig, NULL);
-    encoder->_generator = generator;
 
-    status = ProcessObject(encoder, value);
+    self->_generator = generator;
+
+    status = ProcessObject(self, obj);
 
     if (status != yajl_gen_status_ok) {
         PyErr_SetObject(PyExc_ValueError, PyString_FromString("Failed to process"));
@@ -141,11 +137,22 @@ PyObject *py_yajlencoder_encode(PYARGS)
     result = PyString_FromStringAndSize(buffer, buflen);
 
     yajl_gen_free(generator);
-    encoder->_generator = NULL;
+    self->_generator = NULL;
 
     if ( (!buffer) || (!buflen) )
         return NULL;
     return result;
+}
+
+PyObject *py_yajlencoder_encode(PYARGS)
+{
+    _YajlEncoder *encoder = (_YajlEncoder *)(self);
+    PyObject *value;
+
+    if (!PyArg_ParseTuple(args, "O", &value))
+        return NULL;
+
+    return _internal_encode(encoder, value);
 }
 
 int yajlencoder_init(PYARGS)

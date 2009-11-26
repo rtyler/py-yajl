@@ -125,8 +125,6 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 }; 
 
-PyObject *__encode = NULL;
-
 static PyObject *py_loads(PYARGS)
 {
     PyObject *decoder = NULL;
@@ -163,10 +161,7 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    if (__encode == NULL)
-        __encode = PyString_FromString("encode");
-
-    result = PyObject_CallMethodObjArgs(encoder, __encode, obj, NULL);
+    result = _internal_encode(encoder, obj);
     Py_XDECREF(encoder);
     return result;
 }
