@@ -65,12 +65,7 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
 
 int PlaceObject(_YajlDecoder *self, PyObject *object)
 {
-    unsigned int length;
-
-    /* if (self->elements == NULL) */
-    /*     return failure; */
-
-    length = py_yajl_ps_length(self->elements);
+    unsigned int length = py_yajl_ps_length(self->elements);
 
     if (length == 0) {
         /*
@@ -87,22 +82,12 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 
 static int handle_null(void *ctx)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    int rc = -1;
-
-    rc = PlaceObject(self, Py_None);
-
-    if (rc == success)
-        return success;
-    return failure;
+    return PlaceObject(ctx, Py_None);
 }
 
 static int handle_bool(void *ctx, int value)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyBool_FromLong((long)(value));
-
-    return PlaceObject(self, object);
+    return PlaceObject(ctx, PyBool_FromLong((long)(value)));
 }
 
 static int handle_number(void *ctx, const char *value, unsigned int length)
@@ -134,34 +119,27 @@ static int handle_number(void *ctx, const char *value, unsigned int length)
 
 static int handle_string(void *ctx, const unsigned char *value, unsigned int length)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = PyString_FromStringAndSize((char *)(value), length);
-    return PlaceObject(self, object);
+    return PlaceObject(ctx, PyString_FromStringAndSize((char *)value, length));
 }
 
 static int handle_start_dict(void *ctx)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyDict_New();
-
     if (!object)
         return failure;
 
-    py_yajl_ps_push(self->elements, object);
-    return success;;
+    py_yajl_ps_push(((_YajlDecoder *)(ctx))->elements, object);
+    return success;
 }
 
 static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *object = NULL;
+    PyObject *object = PyString_FromStringAndSize((const char *) value, length);
 
-    object = PyString_FromStringAndSize((const char *) value, length);
-
-    if (NULL == object)
+    if (object == NULL)
         return failure;
 
-    py_yajl_ps_push(self->keys, object);
+    py_yajl_ps_push(((_YajlDecoder *)(ctx))->keys, object);
     return success;
 }
 
@@ -197,13 +175,12 @@ static int handle_end_dict(void *ctx)
 
 static int handle_start_list(void *ctx)
 {
-    _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object = PyList_New(0);
 
     if (!object)
         return failure;
 
-    py_yajl_ps_push(self->elements, object);
+    py_yajl_ps_push(((_YajlDecoder *)(ctx))->elements, object);
     return success;
 }
 
