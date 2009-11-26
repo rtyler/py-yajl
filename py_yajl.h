@@ -59,9 +59,9 @@ enum { failure, success };
  * Methods defined for the YajlDecoder type in decoder.c
  */
 extern PyObject *py_yajldecoder_decode(PYARGS);
-extern PyObject *py_yajldecoder_raw_decode(PYARGS);
 extern int yajldecoder_init(PYARGS);
 extern void yajldecoder_dealloc(_YajlDecoder *self);
+extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen);
 
 
 /*

@@ -35,7 +35,6 @@
 
 static PyMethodDef yajldecoder_methods[] = {
     {"decode", (PyCFunction)(py_yajldecoder_decode), METH_VARARGS, NULL},
-    {"raw_decode", (PyCFunction)(py_yajldecoder_raw_decode), METH_VARARGS, NULL},
     {NULL}
 };
 
@@ -126,16 +125,16 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 }; 
 
-PyObject *__decode = NULL;
 PyObject *__encode = NULL;
 
 static PyObject *py_loads(PYARGS)
 {
     PyObject *decoder = NULL;
-    PyObject *str = NULL;
     PyObject *result = NULL;
+    char *buffer = NULL;
+    unsigned int buflen = 0;
 
-    if (!PyArg_ParseTuple(args, "S", &str)) {
+    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen)) {
         return NULL;
     }
     
@@ -144,10 +143,7 @@ static PyObject *py_loads(PYARGS)
         return NULL;
     }
 
-    if (__decode == NULL)
-        __decode = PyString_FromString("decode");
-
-    result = PyObject_CallMethodObjArgs(decoder, __decode, str, NULL);
+    result = _internal_decode(decoder, buffer, buflen);
     Py_XDECREF(decoder);
     return result;
 }

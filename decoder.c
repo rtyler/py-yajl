@@ -220,31 +220,19 @@ static yajl_callbacks decode_callbacks = {
     handle_end_list
 };
 
-PyObject *py_yajldecoder_decode(PYARGS)
+PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen)
 {
-    _YajlDecoder *decoder = (_YajlDecoder *)(self);
-    char *buffer = NULL;
-    unsigned int buflen = 0;
     yajl_handle parser = NULL;
     yajl_status yrc;
     yajl_parser_config config = { 1, 1 };
 
-    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen))
-        return NULL;
-
-    if (!buflen) {
-        PyErr_SetObject(PyExc_ValueError, 
-                PyString_FromString("Cannot parse an empty buffer"));
-        return NULL;
+    if (self->elements.used > 0) {
+        py_yajl_ps_free(self->elements);
+        py_yajl_ps_init(self->elements);
     }
-
-    if (decoder->elements.used > 0) {
-        py_yajl_ps_free(decoder->elements);
-        py_yajl_ps_init(decoder->elements);
-    }
-    if (decoder->keys.used > 0) {
-        py_yajl_ps_free(decoder->keys);
-        py_yajl_ps_init(decoder->keys);
+    if (self->keys.used > 0) {
+        py_yajl_ps_free(self->keys);
+        py_yajl_ps_init(self->keys);
     }
 
     /* callbacks, config, allocfuncs */
@@ -259,7 +247,7 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
     }
 
-    if (decoder->root == NULL) {
+    if (self->root == NULL) {
         PyErr_SetObject(PyExc_ValueError, 
                 PyString_FromString("The root object is NULL"));
         return NULL;
@@ -267,15 +255,26 @@ PyObject *py_yajldecoder_decode(PYARGS)
     
     // Callee now owns memory, we'll leave refcnt at one and
     // null out our pointer.
-    PyObject * root = decoder->root;
-    decoder->root = NULL;
-
+    PyObject *root = self->root;
+    self->root = NULL;
     return root;
 }
 
-PyObject *py_yajldecoder_raw_decode(PYARGS)
+PyObject *py_yajldecoder_decode(PYARGS)
 {
-    return NULL;
+    _YajlDecoder *decoder = (_YajlDecoder *)(self);
+    char *buffer = NULL;
+    unsigned int buflen = 0;
+
+    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen))
+        return NULL;
+
+    if (!buflen) {
+        PyErr_SetObject(PyExc_ValueError, 
+                PyString_FromString("Cannot parse an empty buffer"));
+        return NULL;
+    }
+    return _internal_decode(decoder, buffer, buflen);
 }
 
 int yajldecoder_init(PYARGS)
