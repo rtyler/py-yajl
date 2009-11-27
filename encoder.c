@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
  * 
@@ -113,35 +114,89 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 
 yajl_alloc_funcs *y_allocs = NULL;
 
+/* a structure used to pass context to our printer function */
+struct StringAndUsedCount 
+{
+    PyObject * str;
+    size_t used;    
+};
+
+/* start at a very small chunk size and double */
+#define PY_YAJL_CHUNK_SZ 64
+    
+static void py_yajl_printer(void * ctx,
+                            const char * str,
+                            unsigned int len)
+{
+    struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;    
+    size_t newsize = Py_SIZE(sauc->str);
+
+    if (!sauc || !sauc->str) return;
+
+    /* resize our string if necc */
+    while (sauc->used + len > newsize) newsize *= 2;
+    if (newsize != Py_SIZE(sauc->str)) {
+        _PyString_Resize(&(sauc->str), newsize);        
+        if (!sauc->str) return;
+    }
+
+    /* and append data if available */
+    if (len && str) {
+        memcpy((void *) (((PyStringObject *) sauc->str)->ob_sval + sauc->used), str, len);
+        sauc->used += len;
+    }
+}
+
+/* Efficiently allocate a python string of a fixed size containing uninitialized memory */
+static PyObject * lowLevelStringAlloc(Py_ssize_t size)
+{
+    PyStringObject * op = (PyStringObject *)PyObject_MALLOC(sizeof(PyStringObject) + size);
+    if (op) {
+        PyObject_INIT_VAR(op, &PyString_Type, size);
+        op->ob_shash = -1;
+        op->ob_sstate = SSTATE_NOT_INTERNED;
+    }
+    return (PyObject *) op;
+}
+
 PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
 {
-    PyObject *result = NULL;
     yajl_gen generator = NULL;
-    yajl_status yrc;
-    const unsigned char *buffer;
-    unsigned int buflen = 0;
     yajl_gen_config genconfig = { 0, NULL};
     yajl_gen_status status;
-    generator = yajl_gen_alloc(&genconfig, NULL);
+    struct StringAndUsedCount sauc;
+
+    /* initialize context for our printer function which
+     * performs low level string appending, using the python
+     * string implementation as a chunked growth buffer */
+    sauc.used = 0;
+    sauc.str = lowLevelStringAlloc(PY_YAJL_CHUNK_SZ);
+
+    generator = yajl_gen_alloc2(py_yajl_printer, &genconfig, NULL, (void *) &sauc);
 
     self->_generator = generator;
 
     status = ProcessObject(self, obj);
 
-    if (status != yajl_gen_status_ok) {
-        PyErr_SetObject(PyExc_ValueError, PyString_FromString("Failed to process"));
-        return NULL;
-    }
-    yrc = yajl_gen_get_buf(generator, &buffer, &buflen);
-
-    result = PyString_FromStringAndSize(buffer, buflen);
-
     yajl_gen_free(generator);
     self->_generator = NULL;
 
-    if ( (!buffer) || (!buflen) )
+    /* if resize failed inside our printer function we'll have a null sauc.str */
+    if (!sauc.str) {
+        PyErr_SetObject(PyExc_ValueError, PyString_FromString("Allocation failure"));
         return NULL;
-    return result;
+    }
+
+    if (status != yajl_gen_status_ok) {
+        PyErr_SetObject(PyExc_ValueError, PyString_FromString("Failed to process"));
+        Py_XDECREF(sauc.str);
+        return NULL;
+    }
+
+    /* truncate to used size, and resize will handle the null plugging */
+    _PyString_Resize(&sauc.str, sauc.used);
+
+    return sauc.str;
 }
 
 PyObject *py_yajlencoder_encode(PYARGS)
