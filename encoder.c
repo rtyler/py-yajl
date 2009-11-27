@@ -129,11 +129,12 @@ static void py_yajl_printer(void * ctx,
                             unsigned int len)
 {
     struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;    
-    size_t newsize = Py_SIZE(sauc->str);
+    size_t newsize;
 
     if (!sauc || !sauc->str) return;
 
     /* resize our string if necc */
+    newsize = Py_SIZE(sauc->str);
     while (sauc->used + len > newsize) newsize *= 2;
     if (newsize != Py_SIZE(sauc->str)) {
         _PyString_Resize(&(sauc->str), newsize);        
