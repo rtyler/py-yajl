@@ -141,7 +141,7 @@ static PyObject *py_loads(PYARGS)
         return NULL;
     }
 
-    result = _internal_decode(decoder, buffer, buflen);
+    result = _internal_decode((_YajlDecoder *)decoder, buffer, buflen);
     Py_XDECREF(decoder);
     return result;
 }
@@ -161,14 +161,26 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    result = _internal_encode(encoder, obj);
+    result = _internal_encode((_YajlEncoder *)encoder, obj);
     Py_XDECREF(encoder);
     return result;
+}
+
+static PyObject *py_load(PYARGS)
+{
+    return NULL;
+}
+
+static PyObject *py_dump(PYARGS)
+{
+    return NULL;
 }
 
 static struct PyMethodDef yajl_methods[] = {
     {"dumps", (PyCFunction)(py_dumps), METH_VARARGS, NULL},
     {"loads", (PyCFunction)(py_loads), METH_VARARGS, NULL},
+    {"load", (PyCFunction)(py_load), METH_VARARGS, NULL},
+    {"dump", (PyCFunction)(py_dump), METH_VARARGS, NULL},
     {NULL}
 };
 

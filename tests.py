@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+
+from StringIO import StringIO
 import unittest
 
 import yajl
@@ -96,6 +98,22 @@ class ErrorCasesTests(unittest.TestCase):
 
     def test_None(self):
         self.failUnlessRaises(ValueError, self.d.decode, None)
+
+
+class StreamDecodingTests(unittest.TestCase):
+    def setUp(self):
+        self.stream = StringIO('{"foo":["one","two", ["three, "four"]]}')
+
+    def test_blocking_decode(self):
+        obj = yajl.load(self.stream)
+        self.assertEquals(obj, {'foo' : ['one', 'two', ['three', 'four']]})
+
+class StreamEncodingTests(unittest.TestCase):
+    def test_blocking_encode(self):
+        obj = {'foo' : ['one', 'two', ['three', 'four']]}
+        stream = StringIO()
+        buffer = yajl.dump(obj, stream)
+        self.assertEquals(stream.getvalue(), '{"foo":["one","two", ["three, "four"]]}')
 
 
 if __name__ == '__main__':
