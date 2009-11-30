@@ -52,8 +52,9 @@ typedef struct {
 } _YajlEncoder;
 
 #define PYARGS PyObject *self, PyObject *args, PyObject *kwargs
-
 enum { failure, success };
+
+#define PY_YAJL_CHUNK_SZ 64
 
 /*
  * Methods defined for the YajlDecoder type in decoder.c

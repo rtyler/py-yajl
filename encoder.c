@@ -121,8 +121,6 @@ struct StringAndUsedCount
     size_t used;    
 };
 
-/* start at a very small chunk size and double */
-#define PY_YAJL_CHUNK_SZ 64
     
 static void py_yajl_printer(void * ctx,
                             const char * str,
