@@ -1,5 +1,0 @@
-1. clone this repository
-2. git submodule init && git submodule update
-3. python setup.py build_ext --inplace
-4. python ./tests.py
-
