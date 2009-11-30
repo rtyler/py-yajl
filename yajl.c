@@ -166,14 +166,93 @@ static PyObject *py_dumps(PYARGS)
     return result;
 }
 
-static PyObject *py_load(PYARGS)
+static PyObject *__read = NULL;
+static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
 {
+    PyObject *decoder = NULL;
+    PyObject *stream = NULL;
+    PyObject *buffer = NULL;
+    PyObject *result = NULL;
+
+    if (!PyArg_ParseTuple(args, "O", &stream)) {
+        goto bad_type;
+    }
+
+    if (__read == NULL) {
+        __read = PyString_FromString("read");
+    }
+
+    if (!PyObject_HasAttr(stream, __read)) {
+        goto bad_type;
+    }
+
+    buffer = PyObject_CallMethodObjArgs(stream, __read, NULL);
+
+    if (!buffer)
+        return NULL;
+
+    decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
+    if (decoder == NULL) {
+        return NULL;
+    }
+
+    result = _internal_decode((_YajlDecoder *)decoder, PyString_AsString(buffer),
+                  PyString_Size(buffer));
+    Py_XDECREF(decoder);
+    Py_XDECREF(buffer);
+    return result;
+
+bad_type:
+    PyErr_SetObject(PyExc_TypeError, PyString_FromString("Must pass a single stream object"));
     return NULL;
 }
 
+static PyObject *py_load(PYARGS)
+{
+    return _internal_stream_load(args, 1);
+}
+static PyObject *py_iterload(PYARGS)
+{
+    return _internal_stream_load(args, 0);
+}
+
+static PyObject *__write = NULL;
+static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
+{
+    PyObject *encoder = NULL;
+    PyObject *stream = NULL;
+    PyObject *buffer = NULL;
+    PyObject *object = NULL;
+
+    if (!PyArg_ParseTuple(args, "OO", &object, &stream)) {
+        goto bad_type;
+    }
+
+    if (__write == NULL) {
+        __write = PyString_FromString("write");
+    }
+
+    if (!PyObject_HasAttr(stream, __write)) {
+        goto bad_type;
+    }
+
+    encoder = PyObject_Call((PyObject *)(&YajlEncoderType), NULL, NULL);
+    if (encoder == NULL) {
+        return NULL;
+    }
+
+    buffer = _internal_encode((_YajlEncoder *)encoder, object);
+    PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
+    Py_XDECREF(encoder);
+    return Py_True;
+
+bad_type:
+    PyErr_SetObject(PyExc_TypeError, PyString_FromString("Must pass a stream object"));
+    return NULL;
+}
 static PyObject *py_dump(PYARGS)
 {
-    return NULL;
+    return _internal_stream_dump(args, 0);
 }
 
 static struct PyMethodDef yajl_methods[] = {
@@ -181,6 +260,9 @@ static struct PyMethodDef yajl_methods[] = {
     {"loads", (PyCFunction)(py_loads), METH_VARARGS, NULL},
     {"load", (PyCFunction)(py_load), METH_VARARGS, NULL},
     {"dump", (PyCFunction)(py_dump), METH_VARARGS, NULL},
+    /*
+     {"iterload", (PyCFunction)(py_iterload), METH_VARARGS, NULL},
+     */
     {NULL}
 };
 
