@@ -14,7 +14,7 @@ base_modules = [
                 'yajl/src/yajl_lex.c',
                 'yajl/src/yajl_parser.c',
             ],
-            include_dirs=('includes/', 'yajl/src'),
+            include_dirs=('.', 'includes/', 'yajl/src'),
             extra_compile_args=['-Wall',]),
         ]
 
@@ -25,7 +25,7 @@ packages = ('yajl',)
 setup(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '1.0',
+    version = '0.1',
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
     ext_modules=base_modules,
