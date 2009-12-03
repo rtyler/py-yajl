@@ -25,7 +25,7 @@ packages = ('yajl',)
 setup(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '0.1',
+    version = '0.1.1',
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
     ext_modules=base_modules,
