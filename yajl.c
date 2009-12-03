@@ -256,10 +256,20 @@ static PyObject *py_dump(PYARGS)
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunction)(py_dumps), METH_VARARGS, NULL},
-    {"loads", (PyCFunction)(py_loads), METH_VARARGS, NULL},
-    {"load", (PyCFunction)(py_load), METH_VARARGS, NULL},
-    {"dump", (PyCFunction)(py_dump), METH_VARARGS, NULL},
+    {"dumps", (PyCFunction)(py_dumps), METH_VARARGS, 
+"yajl.dumps(obj)\n\n\
+Returns an encoded JSON string of the specified `obj`"},
+    {"loads", (PyCFunction)(py_loads), METH_VARARGS, 
+"yajl.loads(string)\n\n\
+Returns a decoded object based on the given JSON `string`"},
+    {"load", (PyCFunction)(py_load), METH_VARARGS, 
+"yajl.load(fp)\n\n\
+Returns a decoded object based on the JSON read from the `fp` stream-like\n\
+object; *Note:* It is expected that `fp` supports the `read()` method"},
+    {"dump", (PyCFunction)(py_dump), METH_VARARGS, 
+"yajl.dump(obj, fp)\n\n\
+Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
+*Note*: It is expected that `fp` supports the `write()` method"},
     /*
      {"iterload", (PyCFunction)(py_iterload), METH_VARARGS, NULL},
      */
@@ -270,7 +280,17 @@ static struct PyMethodDef yajl_methods[] = {
 
 PyMODINIT_FUNC inityajl(void)
 {
-    PyObject *module = Py_InitModule3("yajl", yajl_methods, NULL);
+    PyObject *module = Py_InitModule3("yajl", yajl_methods, 
+"Providing a pythonic interface to the yajl (Yet Another JSON Library) parser\n\n\
+The interface is similar to that of simplejson or jsonlib providing a consistent syntax for JSON\n\
+encoding and decoding. Unlike simplejson or jsonlib, yajl is **fast** :)\n\n\
+The following benchmark was done with a fairly large (100K) JSON document:\n\
+\tjson.loads():\t\t25415.4966ms\n\
+\tsimplejson.loads():\t979.3956ms\n\
+\tyajl.loads():\t\t665.4831ms\n\n\
+\tjson.dumps():\t\t9450.8894ms\n\
+\tyajl.dumps():\t\t946.6942ms\n\
+\tsimplejson.dumps():\t938.4636ms");
 
     YajlDecoderType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&YajlDecoderType) < 0)
