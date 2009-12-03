@@ -280,17 +280,19 @@ Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
 
 PyMODINIT_FUNC inityajl(void)
 {
+
     PyObject *module = Py_InitModule3("yajl", yajl_methods, 
 "Providing a pythonic interface to the yajl (Yet Another JSON Library) parser\n\n\
 The interface is similar to that of simplejson or jsonlib providing a consistent syntax for JSON\n\
 encoding and decoding. Unlike simplejson or jsonlib, yajl is **fast** :)\n\n\
-The following benchmark was done with a fairly large (100K) JSON document:\n\
-\tjson.loads():\t\t25415.4966ms\n\
-\tsimplejson.loads():\t979.3956ms\n\
-\tyajl.loads():\t\t665.4831ms\n\n\
-\tjson.dumps():\t\t9450.8894ms\n\
-\tyajl.dumps():\t\t946.6942ms\n\
-\tsimplejson.dumps():\t938.4636ms");
+The following benchmark was done on a dual core MacBook Pro with a fairly large (100K) JSON document:\n\
+json.loads():\t\t21351.313ms\n\
+simplejson.loads():\t1378.6492ms\n\
+yajl.loads():\t\t502.4572ms\n\
+\n\
+json.dumps():\t\t7760.6348ms\n\
+simplejson.dumps():\t930.9748ms\n\
+yajl.dumps():\t\t681.0221ms");
 
     YajlDecoderType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&YajlDecoderType) < 0)
