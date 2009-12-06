@@ -1,4 +1,5 @@
-== Getting started building py-yajl ==
+Getting started building py-yajl
+=================================
 
 1. clone this repository
 2. `git submodule update --init`
