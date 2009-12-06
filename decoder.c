@@ -93,7 +93,12 @@ static int handle_bool(void *ctx, int value)
 static int handle_number(void *ctx, const char *value, unsigned int length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
-    PyObject *string, *object;
+    PyObject *object;
+#ifdef IS_PYTHON3
+    PyBytesObject *string;
+#else
+    PyObject *string;
+#endif
 
     int floaty_char;
 
@@ -106,20 +111,28 @@ static int handle_number(void *ctx, const char *value, unsigned int length)
     }
 
   floatin:
+#ifdef IS_PYTHON3
+    string = (PyBytesObject *)PyBytes_FromStringAndSize(value, length);
+    if (floaty_char >= length) {
+        object = PyLong_FromString(string->ob_sval, NULL, 10);
+    } else {
+        object = PyFloat_FromString((PyObject *)string);
+    }
+#else
     string = PyString_FromStringAndSize(value, length);
     if (floaty_char >= length) {
         object = PyInt_FromString(PyString_AS_STRING(string), NULL, 10);
     } else {
         object = PyFloat_FromString(string, NULL);
     }
+#endif
     Py_XDECREF(string);
-
     return PlaceObject(self, object);
 }
 
 static int handle_string(void *ctx, const unsigned char *value, unsigned int length)
 {
-    return PlaceObject(ctx, PyString_FromStringAndSize((char *)value, length));
+    return PlaceObject(ctx, PyUnicode_FromStringAndSize((char *)value, length));
 }
 
 static int handle_start_dict(void *ctx)
@@ -134,7 +147,7 @@ static int handle_start_dict(void *ctx)
 
 static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
 {
-    PyObject *object = PyString_FromStringAndSize((const char *) value, length);
+    PyObject *object = PyUnicode_FromStringAndSize((const char *) value, length);
 
     if (object == NULL)
         return failure;
@@ -243,13 +256,13 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
 
     if (yrc != yajl_status_ok) {
         PyErr_SetObject(PyExc_ValueError, 
-                PyString_FromString(yajl_status_to_string(yrc)));
+                PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
 
     if (self->root == NULL) {
         PyErr_SetObject(PyExc_ValueError, 
-                PyString_FromString("The root object is NULL"));
+                PyUnicode_FromString("The root object is NULL"));
         return NULL;
     }
     
@@ -271,7 +284,7 @@ PyObject *py_yajldecoder_decode(PYARGS)
 
     if (!buflen) {
         PyErr_SetObject(PyExc_ValueError, 
-                PyString_FromString("Cannot parse an empty buffer"));
+                PyUnicode_FromString("Cannot parse an empty buffer"));
         return NULL;
     }
     return _internal_decode(decoder, buffer, buflen);
@@ -296,5 +309,9 @@ void yajldecoder_dealloc(_YajlDecoder *self)
     if (self->root) {
         Py_XDECREF(self->root);
     }
+#ifdef IS_PYTHON3
+    Py_TYPE(self)->tp_free((PyObject*)self);
+#else
     self->ob_type->tp_free((PyObject*)self);
+#endif
 }

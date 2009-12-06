@@ -44,8 +44,12 @@ static PyMethodDef yajlencoder_methods[] = {
 };
 
 static PyTypeObject YajlDecoderType = {
+#ifdef IS_PYTHON3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#endif
     "yajl.YajlDecoder",        /*tp_name*/
     sizeof(_YajlDecoder),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -85,8 +89,12 @@ static PyTypeObject YajlDecoderType = {
 }; 
 
 static PyTypeObject YajlEncoderType = {
+#ifdef IS_PYTHON3
+    PyVarObject_HEAD_INIT(NULL, 0)
+#else
     PyObject_HEAD_INIT(NULL)
     0,                         /*ob_size*/
+#endif
     "yajl.YajlEncoder",        /*tp_name*/
     sizeof(_YajlEncoder),      /*tp_basicsize*/
     0,                         /*tp_itemsize*/
@@ -173,13 +181,14 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     PyObject *stream = NULL;
     PyObject *buffer = NULL;
     PyObject *result = NULL;
+    PyObject *bufferstring = NULL;
 
     if (!PyArg_ParseTuple(args, "O", &stream)) {
         goto bad_type;
     }
 
     if (__read == NULL) {
-        __read = PyString_FromString("read");
+        __read = PyUnicode_FromString("read");
     }
 
     if (!PyObject_HasAttr(stream, __read)) {
@@ -191,19 +200,31 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     if (!buffer)
         return NULL;
 
+#ifdef IS_PYTHON3
+    bufferstring = PyUnicode_AsUTF8String(buffer);
+    if (!bufferstring)
+        return NULL;
+#endif
+
     decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
     if (decoder == NULL) {
         return NULL;
     }
 
+#ifdef IS_PYTHON3
+    result = _internal_decode((_YajlDecoder *)decoder, PyBytes_AsString(bufferstring),
+                PyBytes_Size(bufferstring));
+    Py_XDECREF(bufferstring);
+#else
     result = _internal_decode((_YajlDecoder *)decoder, PyString_AsString(buffer),
                   PyString_Size(buffer));
+#endif
     Py_XDECREF(decoder);
     Py_XDECREF(buffer);
     return result;
 
 bad_type:
-    PyErr_SetObject(PyExc_TypeError, PyString_FromString("Must pass a single stream object"));
+    PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a single stream object"));
     return NULL;
 }
 
@@ -229,7 +250,7 @@ static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
     }
 
     if (__write == NULL) {
-        __write = PyString_FromString("write");
+        __write = PyUnicode_FromString("write");
     }
 
     if (!PyObject_HasAttr(stream, __write)) {
@@ -247,7 +268,7 @@ static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
     return Py_True;
 
 bad_type:
-    PyErr_SetObject(PyExc_TypeError, PyString_FromString("Must pass a stream object"));
+    PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a stream object"));
     return NULL;
 }
 static PyObject *py_dump(PYARGS)
@@ -277,11 +298,16 @@ Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
 };
 
 
-
+#ifdef IS_PYTHON3
+static struct PyModuleDef yajlmodule = {
+    PyModuleDef_HEAD_INIT,
+    "yajl",
+#else
 PyMODINIT_FUNC inityajl(void)
 {
 
     PyObject *module = Py_InitModule3("yajl", yajl_methods, 
+#endif
 "Providing a pythonic interface to the yajl (Yet Another JSON Library) parser\n\n\
 The interface is similar to that of simplejson or jsonlib providing a consistent syntax for JSON\n\
 encoding and decoding. Unlike simplejson or jsonlib, yajl is **fast** :)\n\n\
@@ -292,20 +318,43 @@ yajl.loads():\t\t502.4572ms\n\
 \n\
 json.dumps():\t\t7760.6348ms\n\
 simplejson.dumps():\t930.9748ms\n\
-yajl.dumps():\t\t681.0221ms");
+yajl.dumps():\t\t681.0221ms"
+#ifdef IS_PYTHON3
+    , -1, yajl_methods, NULL, NULL, NULL, NULL
+};
+
+PyMODINIT_FUNC PyInit_yajl(void) 
+{
+    PyObject *module = PyModule_Create(&yajlmodule);
+#else
+);
+#endif
 
     YajlDecoderType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&YajlDecoderType) < 0)
-        return;
+    if (PyType_Ready(&YajlDecoderType) < 0) {
+        goto bad_exit;
+    }
 
     Py_INCREF(&YajlDecoderType);
     PyModule_AddObject(module, "Decoder", (PyObject *)(&YajlDecoderType));
 
     YajlEncoderType.tp_new = PyType_GenericNew;
-    if (PyType_Ready(&YajlEncoderType) < 0)
-        return;
+    if (PyType_Ready(&YajlEncoderType) < 0) {
+        goto bad_exit;
+    }
 
     Py_INCREF(&YajlEncoderType);
     PyModule_AddObject(module, "Encoder", (PyObject *)(&YajlEncoderType));
+
+#ifdef IS_PYTHON3
+    return module;
+#endif
+
+bad_exit:
+#ifdef IS_PYTHON3
+    return NULL;
+#else
+    return;
+#endif
 }
 

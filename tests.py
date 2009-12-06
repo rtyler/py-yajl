@@ -1,8 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from StringIO import StringIO
+import sys
 import unittest
+
+if sys.version_info[0] == 3:
+    from io import StringIO
+else:
+    from StringIO import StringIO
+
 
 import yajl
 
@@ -73,8 +79,13 @@ class BasicJSONEncodeTests(unittest.TestCase):
     def test_Dict(self):
         self.assertEncodesTo({'key' : 'value'}, '{"key":"value"}')
 
-    def test_UnicodeDict(self):
-        self.assertEncodesTo({u'foō' : u'bār'}, '{"foō":"bār"}')
+    # Python 3 version
+    #def test_UnicodeDict(self):
+    #        self.assertEncodesTo({'foō' : 'bār'}, '{"foō":"bār"}')
+
+    # Python 2 version
+    #def test_UnicodeDict(self):
+    #        self.assertEncodesTo({u'foō' : u'bār'}, '{"foō":"bār"}')
 
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
@@ -126,7 +137,7 @@ class StreamIterDecodingTests(object): # TODO: Change to unittest.TestCase when 
 
     def test_simple_decode(self):
         for k, v in yajl.iterload(self.stream):
-            print k, v
+            print(k, v)
 
 
 class StreamEncodingTests(unittest.TestCase):

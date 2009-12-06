@@ -36,6 +36,10 @@
 #include <Python.h>
 #include "ptrstack.h"
 
+#if PY_MAJOR_VERSION >= 3
+#define IS_PYTHON3
+#endif
+
 typedef struct {
     PyObject_HEAD
 

@@ -58,5 +58,5 @@ if json:
 for name, args in contenders:
     test(*args)
     x, y = profile(*args)
-    print "%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, x, y, x+y)
+    print("%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
+        name, x, y, x+y))
