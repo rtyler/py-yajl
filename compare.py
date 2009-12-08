@@ -1,6 +1,7 @@
 import time
 
 import pickle
+import string
 import yajl
 try:
     import cjson
@@ -45,6 +46,15 @@ def test(serial, deserial, data=None):
     assert deserial(serial(data)) == data
 
 
+def format(flt, prec=3):
+    s = str(round(flt, prec))
+    return padright(s, s.index(".") + 4, "0")
+
+
+def padright(s, upto, padchar=" "):
+    return s + (padchar * (upto - len(s)))
+
+
 contenders = [
     ('yajl', (yajl.Encoder().encode, yajl.Decoder().decode)),
 ]
@@ -55,8 +65,13 @@ if simplejson:
 if json:
     contenders.append(('stdlib json', (json.dumps, json.loads)))
 
+tmpl = string.Template("$name serialize: $ser  deserialize: $des   total: $tot")
 for name, args in contenders:
     test(*args)
     x, y = profile(*args)
-    print("%-11s serialize: %0.3f  deserialize: %0.3f  total: %0.3f" % (
-        name, x, y, x+y))
+    print(tmpl.substitute(
+        name=padright(name, 11),
+        ser=format(x),
+        des=format(y),
+        tot=format(x + y)
+    ))
