@@ -80,16 +80,21 @@ class BasicJSONEncodeTests(unittest.TestCase):
         self.assertEncodesTo({'key' : 'value'}, '{"key":"value"}')
 
     # Python 3 version
-    #def test_UnicodeDict(self):
-    #        self.assertEncodesTo({'foō' : 'bār'}, '{"foō":"bār"}')
+    def python3_test_UnicodeDict(self):
+            self.assertEncodesTo({'foō' : 'bār'}, '{"foō":"bār"}')
 
     # Python 2 version
-    #def test_UnicodeDict(self):
-    #        self.assertEncodesTo({u'foō' : u'bār'}, '{"foō":"bār"}')
+    def python2_test_UnicodeDict(self):
+            self.assertEncodesTo({unicode('fo\\u014d') : unicode('b\\u0101r')}, '{"fo\\\\u014d":"b\\\\u0101r"}')
 
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
             '{"key":{"subkey":[1,2,3]}}')
+
+if sys.version_info[0] > 2:
+    BasicJSONEncodeTests.test_UnicodeDict = BasicJSONEncodeTests.python3_test_UnicodeDict
+else:
+    BasicJSONEncodeTests.test_UnicodeDict = BasicJSONEncodeTests.python2_test_UnicodeDict
 
 
 class LoadsTest(BasicJSONDecodeTests):
