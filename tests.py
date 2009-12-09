@@ -55,6 +55,16 @@ class BasicJSONDecodeTests(unittest.TestCase):
             {"key" : {"subkey" : [1, 2, 3]}}''',
                 {'key' : {'subkey' : [1,2,3]}})
 
+    def test_Nonsense(self):
+        self.assertRaises(ValueError, self.decode, "asdjklfakl2")
+
+    def test_BadNumber(self):
+        """bad code that begins numerically
+
+        http://neil.fraser.name/news/2009/12/08/
+        """
+        self.assertRaises(ValueError, self.decode, "123xxx")
+
 class BasicJSONEncodeTests(unittest.TestCase):
     def encode(self, value):
         return yajl.Encoder().encode(value)
