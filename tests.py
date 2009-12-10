@@ -82,9 +82,9 @@ class BasicJSONEncodeTests(unittest.TestCase):
     def encode(self, value):
         return yajl.Encoder().encode(value)
 
-    def assertEncodesTo(self, value, json):
-        rc = self.encode(value)
-        assert rc == json, ('Failed to encode JSON correctly', locals())
+    def assertEncodesTo(self, value, expected):
+        got = self.encode(value)
+        assert expected == got, ("Failed to encode JSON correctly. expected: '%s', got: '%s'" % (expected, got))
         return True
 
     def test_TrueBool(self):
