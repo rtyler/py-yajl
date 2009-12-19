@@ -190,7 +190,9 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
     yajl_gen_config genconfig = { 0, NULL};
     yajl_gen_status status;
     struct StringAndUsedCount sauc;
+#ifdef IS_PYTHON3
     PyObject *result = NULL;
+#endif
 
     /* initialize context for our printer function which
      * performs low level string appending, using the python
