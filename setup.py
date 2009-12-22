@@ -26,9 +26,17 @@ packages = ('yajl',)
 setup(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '0.2.1',
+    version = '0.3.0',
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
+    url = 'http://rtyler.github.com/py-yajl',
+    long_description='''The `yajl` module provides a Python binding to the Yajl library originally written by `Lloyd Hilaiel <http://github.com/lloyd>`_.
+
+Mailing List
+==============
+You can discuss the C library **Yajl** or py-yajl on the Yajl mailing list, 
+simply send your email to yajl@librelist.com
+    ''',
     ext_modules=base_modules,
 )
 
