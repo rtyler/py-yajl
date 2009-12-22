@@ -154,13 +154,54 @@ static PyObject *py_loads(PYARGS)
     return result;
 }
 
+static unsigned int __config_gen_config(PyObject *indent, yajl_gen_config *config)
+{
+    long indentLevel = -1;
+    char *spaces = NULL; /* XXX: LEAKS */
+
+    if ( (indent) && (indent != Py_None) && (!PyLong_Check(indent)) 
+#ifndef IS_PYTHON3
+            && (!PyInt_Check(indent))
+#endif   
+    ) {
+        PyErr_SetObject(PyExc_TypeError,
+                PyUnicode_FromString("`indent` must be int or None"));
+        return 0;
+    }
+
+    if (indent != Py_None) {
+        indentLevel = PyLong_AsLong(indent);
+
+        if (indentLevel >= 0) {
+            config->beautify = 1;
+            if (indentLevel == 0) {
+                config->indentString = "";
+            }
+            else { 
+                spaces = (char *)(malloc(sizeof(char) * (indentLevel + 1)));
+                memset((void *)(spaces), (int)' ', indentLevel);
+                spaces[indentLevel] = '\0';
+                config->indentString = spaces;
+            }
+        }
+    }
+    return 1;
+}
+
 static PyObject *py_dumps(PYARGS)
 {
     PyObject *encoder = NULL;
     PyObject *obj = NULL;
     PyObject *result = NULL;
+    PyObject *indent = NULL;
+    yajl_gen_config config = { 0, NULL };
+    static char *kwlist[] = {"object", "indent", NULL};
 
-    if (!PyArg_ParseTuple(args, "O", &obj)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", kwlist, &obj, &indent)) {
+        return NULL;
+    }
+
+    if (!__config_gen_config(indent, &config)) {
         return NULL;
     }
 
@@ -169,7 +210,7 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    result = _internal_encode((_YajlEncoder *)encoder, obj);
+    result = _internal_encode((_YajlEncoder *)encoder, obj, config);
     Py_XDECREF(encoder);
     return result;
 }
@@ -238,16 +279,11 @@ static PyObject *py_iterload(PYARGS)
 }
 
 static PyObject *__write = NULL;
-static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
+static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsigned int blocking, 
+            yajl_gen_config config)
 {
     PyObject *encoder = NULL;
-    PyObject *stream = NULL;
     PyObject *buffer = NULL;
-    PyObject *object = NULL;
-
-    if (!PyArg_ParseTuple(args, "OO", &object, &stream)) {
-        goto bad_type;
-    }
 
     if (__write == NULL) {
         __write = PyUnicode_FromString("write");
@@ -262,7 +298,7 @@ static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
         return NULL;
     }
 
-    buffer = _internal_encode((_YajlEncoder *)encoder, object);
+    buffer = _internal_encode((_YajlEncoder *)encoder, object, config);
     PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
     Py_XDECREF(encoder);
     return Py_True;
@@ -271,15 +307,34 @@ bad_type:
     PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a stream object"));
     return NULL;
 }
+
 static PyObject *py_dump(PYARGS)
 {
-    return _internal_stream_dump(args, 0);
+    PyObject *object = NULL;
+    PyObject *indent = NULL;
+    PyObject *stream = NULL;
+    yajl_gen_config config = { 0, NULL };
+    static char *kwlist[] = {"object", "stream", "indent", NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|O", kwlist, &object, &stream, &indent)) {
+        return NULL;
+    }
+    if (!__config_gen_config(indent, &config)) {
+        return NULL;
+    }
+    return _internal_stream_dump(object, stream, 0, config);
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunction)(py_dumps), METH_VARARGS, 
-"yajl.dumps(obj)\n\n\
-Returns an encoded JSON string of the specified `obj`"},
+    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_KEYWORDS, 
+"yajl.dumps(obj [, indent=None])\n\n\
+Returns an encoded JSON string of the specified `obj`\n\
+\n\
+If `indent` is a non-negative integer, then JSON array elements \n\
+and object members will be pretty-printed with that indent level. \n\
+An indent level of 0 will only insert newlines. None (the default) \n\
+selects the most compact representation.\n\
+"},
     {"loads", (PyCFunction)(py_loads), METH_VARARGS, 
 "yajl.loads(string)\n\n\
 Returns a decoded object based on the given JSON `string`"},
@@ -287,10 +342,16 @@ Returns a decoded object based on the given JSON `string`"},
 "yajl.load(fp)\n\n\
 Returns a decoded object based on the JSON read from the `fp` stream-like\n\
 object; *Note:* It is expected that `fp` supports the `read()` method"},
-    {"dump", (PyCFunction)(py_dump), METH_VARARGS, 
-"yajl.dump(obj, fp)\n\n\
+    {"dump", (PyCFunction)(py_dump), METH_KEYWORDS,
+"yajl.dump(obj, fp [, indent=None])\n\n\
 Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
-*Note*: It is expected that `fp` supports the `write()` method"},
+*Note*: It is expected that `fp` supports the `write()` method\n\
+\n\
+If `indent` is a non-negative integer, then JSON array elements \n\
+and object members will be pretty-printed with that indent level. \n\
+An indent level of 0 will only insert newlines. None (the default) \n\
+selects the most compact representation.\n\
+"},
     /*
      {"iterload", (PyCFunction)(py_iterload), METH_VARARGS, NULL},
      */

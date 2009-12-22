@@ -9,10 +9,9 @@ if sys.version_info[0] == 3:
 else:
     from StringIO import StringIO
 
-
 import yajl
 
-class BasicJSONDecodeTests(unittest.TestCase):
+class DecoderBase(unittest.TestCase):
     def decode(self, json):
         return yajl.Decoder().decode(json)
 
@@ -21,7 +20,8 @@ class BasicJSONDecodeTests(unittest.TestCase):
         assert rc == value, ('Failed to decode JSON correctly', 
                 json, value, rc)
         return True
-    
+
+class BasicJSONDecodeTests(DecoderBase):
     def test_TrueBool(self):
         self.assertDecodesTo('true', True)
 
@@ -55,7 +55,8 @@ class BasicJSONDecodeTests(unittest.TestCase):
             {"key" : {"subkey" : [1, 2, 3]}}''',
                 {'key' : {'subkey' : [1,2,3]}})
 
-class BasicJSONEncodeTests(unittest.TestCase):
+
+class EncoderBase(unittest.TestCase):
     def encode(self, value):
         return yajl.Encoder().encode(value)
 
@@ -64,6 +65,7 @@ class BasicJSONEncodeTests(unittest.TestCase):
         assert rc == json, ('Failed to encode JSON correctly', locals())
         return True
 
+class BasicJSONEncodeTests(EncoderBase):
     def test_TrueBool(self):
         self.assertEncodesTo(True, 'true')
 
@@ -146,6 +148,58 @@ class StreamEncodingTests(unittest.TestCase):
         stream = StringIO()
         buffer = yajl.dump(obj, stream)
         self.assertEquals(stream.getvalue(), '{"foo":["one","two",["three","four"]]}')
+
+class DumpsOptionsTests(unittest.TestCase):
+    def test_indent_four(self):
+        rc = yajl.dumps({'foo' : 'bar'}, indent=4)
+        expected = '{\n    "foo": "bar"\n}\n'
+        self.assertEquals(rc, expected)
+
+    def test_indent_zero(self):
+        rc = yajl.dumps({'foo' : 'bar'}, indent=0)
+        expected = '{\n"foo": "bar"\n}\n'
+        self.assertEquals(rc, expected)
+
+    def test_indent_str(self):
+        self.failUnlessRaises(TypeError, yajl.dumps, {'foo' : 'bar'}, indent='4')
+
+    def test_negative_indent(self):
+        ''' Negative `indent` should not result in pretty printing '''
+        rc = yajl.dumps({'foo' : 'bar'}, indent=-1)
+        self.assertEquals(rc, '{"foo":"bar"}')
+
+    def test_none_indent(self):
+        ''' None `indent` should not result in pretty printing '''
+        rc = yajl.dumps({'foo' : 'bar'}, indent=None)
+        self.assertEquals(rc, '{"foo":"bar"}')
+
+class DumpOptionsTests(unittest.TestCase):
+    stream = None
+    def setUp(self):
+        self.stream = StringIO()
+
+    def test_indent_four(self):
+        rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=4)
+        expected = '{\n    "foo": "bar"\n}\n'
+        self.assertEquals(self.stream.getvalue(), expected)
+
+    def test_indent_zero(self):
+        rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=0)
+        expected = '{\n"foo": "bar"\n}\n'
+        self.assertEquals(self.stream.getvalue(), expected)
+
+    def test_indent_str(self):
+        self.failUnlessRaises(TypeError, yajl.dump, {'foo' : 'bar'}, self.stream, indent='4')
+
+    def test_negative_indent(self):
+        ''' Negative `indent` should not result in pretty printing '''
+        rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=-1)
+        self.assertEquals(self.stream.getvalue(), '{"foo":"bar"}')
+
+    def test_none_indent(self):
+        ''' None `indent` should not result in pretty printing '''
+        rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=None)
+        self.assertEquals(self.stream.getvalue(), '{"foo":"bar"}')
 
 
 if __name__ == '__main__':

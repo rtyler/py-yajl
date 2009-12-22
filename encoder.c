@@ -184,10 +184,9 @@ static PyObject * lowLevelStringAlloc(Py_ssize_t size)
     return (PyObject *) op;
 }
 
-PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
+PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config genconfig)
 {
     yajl_gen generator = NULL;
-    yajl_gen_config genconfig = { 0, NULL};
     yajl_gen_status status;
     struct StringAndUsedCount sauc;
 #ifdef IS_PYTHON3
@@ -235,12 +234,12 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
 PyObject *py_yajlencoder_encode(PYARGS)
 {
     _YajlEncoder *encoder = (_YajlEncoder *)(self);
+    yajl_gen_config config = {0, NULL};
     PyObject *value;
 
     if (!PyArg_ParseTuple(args, "O", &value))
         return NULL;
-
-    return _internal_encode(encoder, value);
+    return _internal_encode(encoder, value, config);
 }
 
 int yajlencoder_init(PYARGS)
