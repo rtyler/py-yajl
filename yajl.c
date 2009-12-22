@@ -326,7 +326,7 @@ static PyObject *py_dump(PYARGS)
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_KEYWORDS, 
+    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_VARARGS | METH_KEYWORDS,
 "yajl.dumps(obj [, indent=None])\n\n\
 Returns an encoded JSON string of the specified `obj`\n\
 \n\
@@ -342,7 +342,7 @@ Returns a decoded object based on the given JSON `string`"},
 "yajl.load(fp)\n\n\
 Returns a decoded object based on the JSON read from the `fp` stream-like\n\
 object; *Note:* It is expected that `fp` supports the `read()` method"},
-    {"dump", (PyCFunction)(py_dump), METH_KEYWORDS,
+    {"dump", (PyCFunctionWithKeywords)(py_dump), METH_VARARGS | METH_KEYWORDS,
 "yajl.dump(obj, fp [, indent=None])\n\n\
 Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
 *Note*: It is expected that `fp` supports the `write()` method\n\
