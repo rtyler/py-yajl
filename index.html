@@ -1,0 +1,139 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Meet py-yajl &mdash; py-yajl v0.3.0 documentation</title>
+    <link rel="stylesheet" href="static/default.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '0.3.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
+    <link rel="top" title="py-yajl v0.3.0 documentation" href="" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="">py-yajl v0.3.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="meet-py-yajl">
+<h1>Meet py-yajl<a class="headerlink" href="#meet-py-yajl" title="Permalink to this headline">¶</a></h1>
+<p>The py-yajl project aims to provide Python bindings to &#8220;Yajl&#8221;
+(Yet Another JSON Library) originally developed by <a class="reference external" href="http://github.com/lloyd">Lloyd Hilaiel</a>. &#8220;Yet another Python JSON module?&#8221; you might
+find yourself thinking, the advantages that Yajl brings to the table
+are:</p>
+<blockquote>
+<ul class="simple">
+<li>Speed</li>
+<li>Flexibility</li>
+</ul>
+</blockquote>
+<p>Contents:</p>
+<ul class="simple">
+</ul>
+<div class="section" id="example">
+<h2>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h2>
+<p>Using <tt class="docutils literal"><span class="pre">py-yajl</span></tt> is straight-forward and similar to using the <a title="(in Python v2.7)" class="reference external" href="http://docs.python.org/dev/library/json.html#module-json"><tt class="xref docutils literal"><span class="pre">json</span></tt></a>
+module introduced in <a class="reference external" href="http://docs.python.org/whatsnew/2.6.html">Python 2.6</a>.</p>
+<p><strong>Encoding</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">yajl</span>
+<span class="nb">buffer</span> <span class="o">=</span> <span class="n">yajl</span><span class="o">.</span><span class="n">dumps</span><span class="p">({</span><span class="s">&#39;foo&#39;</span> <span class="p">:</span> <span class="s">&#39;bar&#39;</span><span class="p">})</span>
+</pre></div>
+</div>
+<p><strong>Decoding</strong>:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="kn">import</span> <span class="nn">yajl</span>
+<span class="n">obj</span> <span class="o">=</span> <span class="n">yajl</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="s">&#39;{&quot;foo&quot;:&quot;bar&quot;}&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="get-the-code">
+<h2>Get the code<a class="headerlink" href="#get-the-code" title="Permalink to this headline">¶</a></h2>
+<p>You can find releases of <tt class="docutils literal"><span class="pre">py-yajl</span></tt> in the <a class="reference external" href="http://pypi.python.org/pypi/yajl">Python Package Index</a> or you can get the source from
+<a class="reference external" href="http://www.github.com">GitHub</a> via:</p>
+<div class="highlight-python"><pre>git clone git://github.com/rtyler/py-yajl.git</pre>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference external" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference external" href="modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference external" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="">Meet py-yajl</a><ul>
+<li><a class="reference external" href="#example">Example</a></li>
+<li><a class="reference external" href="#get-the-code">Get the code</a></li>
+</ul>
+</li>
+<li><a class="reference external" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="sources/index.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="">py-yajl v0.3.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2009, R. Tyler Ballance.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.3.
+    </div>
+  </body>
+</html>
