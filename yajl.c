@@ -154,19 +154,22 @@ static PyObject *py_loads(PYARGS)
     return result;
 }
 
-static unsigned int __config_gen_config(PyObject *indent, yajl_gen_config *config)
+static char *__config_gen_config(PyObject *indent, yajl_gen_config *config)
 {
     long indentLevel = -1;
-    char *spaces = NULL; /* XXX: LEAKS */
+    char *spaces = NULL;
 
-    if ( (indent) && (indent != Py_None) && (!PyLong_Check(indent)) 
+    if (!indent) 
+        return NULL;
+
+    if ((indent != Py_None) && (!PyLong_Check(indent)) 
 #ifndef IS_PYTHON3
             && (!PyInt_Check(indent))
 #endif   
     ) {
         PyErr_SetObject(PyExc_TypeError,
                 PyUnicode_FromString("`indent` must be int or None"));
-        return 0;
+        return NULL;
     }
 
     if (indent != Py_None) {
@@ -185,7 +188,7 @@ static unsigned int __config_gen_config(PyObject *indent, yajl_gen_config *confi
             }
         }
     }
-    return 1;
+    return spaces;
 }
 
 static PyObject *py_dumps(PYARGS)
@@ -196,12 +199,14 @@ static PyObject *py_dumps(PYARGS)
     PyObject *indent = NULL;
     yajl_gen_config config = { 0, NULL };
     static char *kwlist[] = {"object", "indent", NULL};
+    char *spaces = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", kwlist, &obj, &indent)) {
         return NULL;
     }
 
-    if (!__config_gen_config(indent, &config)) {
+    spaces = __config_gen_config(indent, &config);
+    if (PyErr_Occurred()) {
         return NULL;
     }
 
@@ -212,6 +217,9 @@ static PyObject *py_dumps(PYARGS)
 
     result = _internal_encode((_YajlEncoder *)encoder, obj, config);
     Py_XDECREF(encoder);
+    if (spaces) {
+        free(spaces);
+    }
     return result;
 }
 
@@ -222,7 +230,9 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     PyObject *stream = NULL;
     PyObject *buffer = NULL;
     PyObject *result = NULL;
+#ifdef IS_PYTHON3
     PyObject *bufferstring = NULL;
+#endif
 
     if (!PyArg_ParseTuple(args, "O", &stream)) {
         goto bad_type;
@@ -313,16 +323,24 @@ static PyObject *py_dump(PYARGS)
     PyObject *object = NULL;
     PyObject *indent = NULL;
     PyObject *stream = NULL;
+    PyObject *result = NULL;
     yajl_gen_config config = { 0, NULL };
     static char *kwlist[] = {"object", "stream", "indent", NULL};
+    char *spaces = NULL;
 
     if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|O", kwlist, &object, &stream, &indent)) {
         return NULL;
     }
-    if (!__config_gen_config(indent, &config)) {
+
+    spaces = __config_gen_config(indent, &config);
+    if (PyErr_Occurred()) {
         return NULL;
     }
-    return _internal_stream_dump(object, stream, 0, config);
+    result = _internal_stream_dump(object, stream, 0, config);
+    if (spaces) {
+        free(spaces);
+    }
+    return result;
 }
 
 static struct PyMethodDef yajl_methods[] = {
