@@ -1,5 +1,10 @@
 import os
-from distutils.core import setup, Extension
+USE_SETUPTOOLS = False
+try:
+    from setuptools import setup, Extension
+    USE_SETUPTOOLS = True
+except ImportError:
+    from distutils.core import setup, Extension
 
 base_modules = [
     Extension('yajl',  [ 
@@ -23,7 +28,7 @@ base_modules = [
 packages = ('yajl',)
 
 
-setup(
+setup_kwargs = dict(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
     version = '0.3.0',
@@ -40,3 +45,7 @@ simply send your email to yajl@librelist.com
     ext_modules=base_modules,
 )
 
+if USE_SETUPTOOLS:
+    setup_kwargs.update({'test_suite' : 'tests.unit'})
+
+setup(**setup_kwargs)
