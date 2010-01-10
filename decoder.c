@@ -48,7 +48,9 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
     if (PyList_Check(parent)) {
         PyList_Append(parent, child);
         // child is now owned by parent!
-        if (child && child !=Py_None) { Py_XDECREF(child); }
+        if ((child) && (child != Py_None)) {
+            Py_XDECREF(child);
+        }
         return success;
     } else if (PyDict_Check(parent)) {
         PyObject* key = py_yajl_ps_current(self->keys);
@@ -56,8 +58,9 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
         py_yajl_ps_pop(self->keys);
         // child is now owned by parent!
         Py_XDECREF(key);
-        if (child && child !=Py_None) { Py_XDECREF(child); }
-        
+        if ((child) && (child != Py_None)) {
+            Py_XDECREF(child);
+        }
         return success;
     }
     return failure;
