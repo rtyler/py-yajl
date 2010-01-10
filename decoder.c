@@ -85,6 +85,7 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 
 static int handle_null(void *ctx)
 {
+    Py_INCREF(Py_None);
     return PlaceObject(ctx, Py_None);
 }
 
