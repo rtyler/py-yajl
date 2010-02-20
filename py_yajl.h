@@ -61,9 +61,9 @@ enum { failure, success };
 
 #define PY_YAJL_CHUNK_SZ 64
 
-#ifndef Py_SIZE
 /* Defining the Py_SIZE macro for 2.4/2.5 compat */
-#define Py_SIZE Py_Size
+#ifndef Py_SIZE
+#define Py_SIZE(ob)     (((PyVarObject*)(ob))->ob_size)
 #endif
 
 /*
