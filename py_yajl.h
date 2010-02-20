@@ -61,6 +61,11 @@ enum { failure, success };
 
 #define PY_YAJL_CHUNK_SZ 64
 
+#ifndef Py_SIZE
+/* Defining the Py_SIZE macro for 2.4/2.5 compat */
+#define Py_SIZE Py_Size
+#endif
+
 /*
  * Methods defined for the YajlDecoder type in decoder.c
  */
