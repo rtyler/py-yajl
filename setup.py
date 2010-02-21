@@ -55,9 +55,9 @@ if USE_SETUPTOOLS:
 
 if not os.listdir('yajl'):
     # Submodule hasn't been created, let's inform the user
-    print '>>> It looks like the `yajl` submodule hasn\'t been initialized'
-    print '>>> I\'ll try to do that, but if I fail, you can run:'
-    print '>>>      `git submodule update --init`'
+    print('>>> It looks like the `yajl` submodule hasn\'t been initialized')
+    print('>>> I\'ll try to do that, but if I fail, you can run:')
+    print('>>>      `git submodule update --init`')
     subprocess.call(['git', 'submodule', 'update', '--init'])
 
 if not os.path.exists('includes'):
@@ -65,7 +65,7 @@ if not os.path.exists('includes'):
     os.mkdir('includes')
 
 if not os.path.exists(os.path.join('includes', 'yajl')):
-    print '>>> Creating a symlink for compilationg: includes/yajl -> yajl/src/api'
+    print('>>> Creating a symlink for compilationg: includes/yajl -> yajl/src/api')
     # Now that we have a directory, we need a symlink
     os.symlink(os.path.join('..', 'yajl', 'src', 'api'), os.path.join('includes', 'yajl'))
 
