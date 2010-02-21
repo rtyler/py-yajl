@@ -1,23 +1,23 @@
 
 /*
  * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of R. Tyler Ballance nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,7 +29,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 #include <Python.h>
 
@@ -91,7 +91,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     }
     if (PyList_Check(object)) {
         /*
-         * Recurse and handle the list 
+         * Recurse and handle the list
          */
         iterator = PyObject_GetIter(object);
         if (iterator == NULL)
@@ -117,7 +117,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         return yajl_gen_map_close(handle);
     }
 
-        
+
     exit:
         return yajl_gen_in_error_state;
 }
@@ -125,18 +125,18 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 yajl_alloc_funcs *y_allocs = NULL;
 
 /* a structure used to pass context to our printer function */
-struct StringAndUsedCount 
+struct StringAndUsedCount
 {
     PyObject * str;
-    size_t used;    
+    size_t used;
 };
 
-    
+
 static void py_yajl_printer(void * ctx,
                             const char * str,
                             unsigned int len)
 {
-    struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;    
+    struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;
     size_t newsize;
 
     if (!sauc || !sauc->str) return;
@@ -148,7 +148,7 @@ static void py_yajl_printer(void * ctx,
 #ifdef IS_PYTHON3
         _PyBytes_Resize(&(sauc->str), newsize);
 #else
-        _PyString_Resize(&(sauc->str), newsize);        
+        _PyString_Resize(&(sauc->str), newsize);
 #endif
         if (!sauc->str)
             return;
