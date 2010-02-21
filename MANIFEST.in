@@ -4,3 +4,5 @@ graft includes
 prune yajl/test
 prune yajl/verify
 prune yajl/reformatter
+prune yajl/.git
+prune yajl/build
