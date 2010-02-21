@@ -1,4 +1,9 @@
+#!/usr/bin/env python
+
 import os
+import subprocess
+import sys
+
 USE_SETUPTOOLS = False
 try:
     from setuptools import setup, Extension
@@ -7,7 +12,7 @@ except ImportError:
     from distutils.core import setup, Extension
 
 base_modules = [
-    Extension('yajl',  [ 
+    Extension('yajl',  [
                 'yajl.c',
                 'encoder.c',
                 'decoder.c',
@@ -39,7 +44,7 @@ setup_kwargs = dict(
 
 Mailing List
 ==============
-You can discuss the C library **Yajl** or py-yajl on the Yajl mailing list, 
+You can discuss the C library **Yajl** or py-yajl on the Yajl mailing list,
 simply send your email to yajl@librelist.com
     ''',
     ext_modules=base_modules,
@@ -47,5 +52,21 @@ simply send your email to yajl@librelist.com
 
 if USE_SETUPTOOLS:
     setup_kwargs.update({'test_suite' : 'tests.unit'})
+
+if not os.listdir('yajl'):
+    # Submodule hasn't been created, let's inform the user
+    print '>>> It looks like the `yajl` submodule hasn\'t been initialized'
+    print '>>> I\'ll try to do that, but if I fail, you can run:'
+    print '>>>      `git submodule update --init`'
+    subprocess.call(['git', 'submodule', 'update', '--init'])
+
+if not os.path.exists('includes'):
+    # Our symlink into the yajl directory isn't there, let's fixulate that
+    os.mkdir('includes')
+
+if not os.path.exists(os.path.join('includes', 'yajl')):
+    print '>>> Creating a symlink for compilationg: includes/yajl -> yajl/src/api'
+    # Now that we have a directory, we need a symlink
+    os.symlink(os.path.join('..', 'yajl', 'src', 'api'), os.path.join('includes', 'yajl'))
 
 setup(**setup_kwargs)
