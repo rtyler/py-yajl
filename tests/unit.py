@@ -203,4 +203,11 @@ class DumpOptionsTests(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.main()
+    verbosity = '-v' in sys.argv and 2 or 1
+    runner = unittest.TextTestRunner(verbosity=verbosity)
+    if 'xml' in sys.argv:
+        import xmlrunner
+        runner = xmlrunner.XMLTestRunner(filename='Yajl-Tests.xml')
+    suites = unittest.findTestCases(sys.modules[__name__])
+    results = runner.run(unittest.TestSuite(suites))
+
