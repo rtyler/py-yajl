@@ -66,6 +66,23 @@ enum { failure, success };
 #define Py_SIZE(ob)     (((PyVarObject*)(ob))->ob_size)
 #endif
 
+/* 
+ * PyUnicode_FromStringAndSize isn't defined in Python 2.4/2.5; IIRC 
+ * JSON strings /should/ be UTF-8 encoded, so PyUnicode_DecodeUTF8() 
+ * seems like the most logical extension
+ */
+#ifndef PyUnicode_FromStringAndSize
+#define PyUnicode_FromStringAndSize(a, b)  PyUnicode_DecodeUTF8(a, b, NULL)
+#endif
+#ifndef PyUnicode_FromString
+#define PyUnicode_FromString(s) PyUnicode_DecodeUTF8(s, strlen(s), NULL)
+#endif
+
+/* On Python 2.4 Py_ssize_t doesn't exist */
+#ifndef Py_ssize_t
+#define Py_ssize_t ssize_t
+#endif
+
 /*
  * Methods defined for the YajlDecoder type in decoder.c
  */
