@@ -133,7 +133,17 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
                 (PyInt_Check(key)) ||
 #endif
                 (PyLong_Check(key)) ) {
+
+                /*
+                 * Performing the conversion separately for Python 2
+                 * and Python 3 to ensure we consistently generate
+                 * unicode strings in both versions
+                 */
+#ifdef IS_PYTHON3
+                newKey = PyObject_Str(key);
+#else
                 newKey = PyObject_Unicode(key);
+#endif
             }
 
             status = ProcessObject(self, newKey);
