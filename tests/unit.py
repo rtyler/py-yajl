@@ -4,7 +4,10 @@
 import sys
 import unittest
 
-if sys.version_info[0] == 3:
+def is_python3():
+    return sys.version_info[0] == 3
+
+if is_python3():
     from io import StringIO
 else:
     from StringIO import StringIO
@@ -17,7 +20,7 @@ class DecoderBase(unittest.TestCase):
 
     def assertDecodesTo(self, json, value):
         rc = self.decode(json)
-        assert rc == value, ('Failed to decode JSON correctly', 
+        assert rc == value, ('Failed to decode JSON correctly',
                 json, value, rc)
         return True
 
@@ -236,6 +239,8 @@ class IssueTenTest(unittest.TestCase):
 
     def testLong(self):
         ''' http://github.com/rtyler/py-yajl/issues#issue/10 '''
+        if is_python3():
+            return
         data = {long(1) : 2}
         result = yajl.loads(yajl.dumps(data))
         self.assertEquals({'1': 2}, result)
