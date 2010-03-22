@@ -102,8 +102,10 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             Py_XDECREF(item);
         }
         Py_XDECREF(iterator);
-        status = yajl_gen_array_close(handle);
-        return status;
+        yajl_gen_status close_status = yajl_gen_array_close(handle);
+        if (status == yajl_gen_in_error_state)
+            return status;
+        return close_status;
     }
     if (PyTuple_Check(object)) {
         /*
@@ -129,7 +131,6 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         }
         return yajl_gen_map_close(handle);
     }
-
 
     exit:
         return yajl_gen_in_error_state;
@@ -227,8 +228,9 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config ge
         return NULL;
     }
 
-    if (status != yajl_gen_status_ok) {
-        PyErr_SetObject(PyExc_ValueError, PyUnicode_FromString("Failed to process"));
+    if ( (status == yajl_gen_in_error_state) ||
+          (status != yajl_gen_status_ok) ) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
         Py_XDECREF(sauc.str);
         return NULL;
     }

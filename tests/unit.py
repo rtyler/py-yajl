@@ -211,6 +211,15 @@ class IssueEightTest(unittest.TestCase):
         self.assertEquals(decoded[0][0], 2)
         self.assertEquals(decoded[0][1], 3)
 
+class IssueNineTest(unittest.TestCase):
+    def testListOfSets(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/9 '''
+        self.failUnlessRaises(TypeError, yajl.dumps, [set([2,3])])
+
+    def testSets(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/9 '''
+        self.failUnlessRaises(TypeError, yajl.dumps, set([2,3]))
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)
