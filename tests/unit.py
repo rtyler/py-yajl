@@ -220,6 +220,26 @@ class IssueNineTest(unittest.TestCase):
         ''' http://github.com/rtyler/py-yajl/issues#issue/9 '''
         self.failUnlessRaises(TypeError, yajl.dumps, set([2,3]))
 
+
+class IssueTenTest(unittest.TestCase):
+    def testInt(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/10 '''
+        data = {1 : 2}
+        result = yajl.loads(yajl.dumps(data))
+        self.assertEquals({'1': 2}, result)
+
+    def testFloat(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/10 '''
+        data = {1.2 : 2}
+        result = yajl.loads(yajl.dumps(data))
+        self.assertEquals({'1.2': 2}, result)
+
+    def testLong(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/10 '''
+        data = {long(1) : 2}
+        result = yajl.loads(yajl.dumps(data))
+        self.assertEquals({'1': 2}, result)
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)

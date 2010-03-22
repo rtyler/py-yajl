@@ -126,7 +126,17 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 
         status = yajl_gen_map_open(handle);
         while (PyDict_Next(object, &position, &key, &value)) {
-            status = ProcessObject(self, key);
+            PyObject *newKey = key;
+
+            if ( (PyFloat_Check(key)) ||
+#ifndef IS_PYTHON3
+                (PyInt_Check(key)) ||
+#endif
+                (PyLong_Check(key)) ) {
+                newKey = PyObject_Unicode(key);
+            }
+
+            status = ProcessObject(self, newKey);
             status = ProcessObject(self, value);
         }
         return yajl_gen_map_close(handle);
