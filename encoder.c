@@ -105,6 +105,19 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         status = yajl_gen_array_close(handle);
         return status;
     }
+    if (PyTuple_Check(object)) {
+        /*
+         * If we have a tuple, convert to a list
+         */
+        Py_ssize_t size = PyTuple_Size(object);
+        PyObject *converted = PyList_New(size);
+        unsigned int i = 0;
+
+        for (; i < size; ++i) {
+            PyList_SET_ITEM(converted, (Py_ssize_t)(i), PyTuple_GetItem(object, i));
+        }
+        return ProcessObject(self, converted);
+    }
     if (PyDict_Check(object)) {
         PyObject *key, *value;
         Py_ssize_t position = 0;

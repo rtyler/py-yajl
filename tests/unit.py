@@ -202,6 +202,15 @@ class DumpOptionsTests(unittest.TestCase):
         self.assertEquals(self.stream.getvalue(), '{"foo":"bar"}')
 
 
+class IssueEightTest(unittest.TestCase):
+    def runTest(self):
+        ''' http://github.com/rtyler/py-yajl/issues#issue/8 '''
+        encoded = yajl.dumps([(2,3,)])
+        decoded = yajl.loads(encoded)
+        self.assertEquals(len(decoded), 1)
+        self.assertEquals(decoded[0][0], 2)
+        self.assertEquals(decoded[0][1], 3)
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)
