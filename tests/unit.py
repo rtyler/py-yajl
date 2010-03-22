@@ -204,6 +204,41 @@ class DumpOptionsTests(unittest.TestCase):
         rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=None)
         self.assertEquals(self.stream.getvalue(), '{"foo":"bar"}')
 
+class IssueSevenTest(unittest.TestCase):
+    def test_latin1(self):
+        ''' Testing with latin-1 for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
+        char = u'f\xe9in'
+        # The `json` module uses "0123456789abcdef" for its code points
+        # while the yajl library uses "0123456789ABCDEF", lower()'ing
+        # to make sure the resulting strings match
+        out = yajl.dumps(char).lower()
+        self.assertEquals(out, '"f\\u00e9in"')
+
+        out = yajl.dumps(out).lower()
+        self.assertEquals(out, '"\\"f\\\\u00e9in\\""')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, u'"f\\u00e9in"')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, char)
+
+    def test_chinese(self):
+        ''' Testing with simplified chinese for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
+        char = u'早安, 爸爸' # Good morning!
+        char = u'\u65e9\u5b89, \u7238\u7238'
+        out = yajl.dumps(char).lower()
+        self.assertEquals(out, '"\\u65e9\\u5b89, \\u7238\\u7238"')
+
+        out = yajl.dumps(out).lower()
+        self.assertEquals(out, '"\\"\\\\u65e9\\\\u5b89, \\\\u7238\\\\u7238\\""')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, u'"\\u65e9\\u5b89, \\u7238\\u7238"')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, char)
+
 
 class IssueEightTest(unittest.TestCase):
     def runTest(self):
