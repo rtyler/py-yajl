@@ -1,0 +1,8 @@
+include py_yajl.h ptrstack.h
+graft yajl
+graft includes
+prune yajl/test
+prune yajl/verify
+prune yajl/reformatter
+prune yajl/.git
+prune yajl/build

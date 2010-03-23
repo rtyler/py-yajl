@@ -1,22 +1,22 @@
 /*
  * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of R. Tyler Ballance nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,7 +28,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 
 #include <Python.h>
@@ -48,7 +48,9 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
     if (PyList_Check(parent)) {
         PyList_Append(parent, child);
         // child is now owned by parent!
-        if (child && child !=Py_None) { Py_XDECREF(child); }
+        if ((child) && (child != Py_None)) {
+            Py_XDECREF(child);
+        }
         return success;
     } else if (PyDict_Check(parent)) {
         PyObject* key = py_yajl_ps_current(self->keys);
@@ -56,8 +58,9 @@ int _PlaceObject(_YajlDecoder *self, PyObject *parent, PyObject *child)
         py_yajl_ps_pop(self->keys);
         // child is now owned by parent!
         Py_XDECREF(key);
-        if (child && child !=Py_None) { Py_XDECREF(child); }
-        
+        if ((child) && (child != Py_None)) {
+            Py_XDECREF(child);
+        }
         return success;
     }
     return failure;
@@ -82,6 +85,7 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
 
 static int handle_null(void *ctx)
 {
+    Py_INCREF(Py_None);
     return PlaceObject(ctx, Py_None);
 }
 
@@ -164,23 +168,23 @@ static int handle_end_dict(void *ctx)
 
     length = py_yajl_ps_length(self->elements);
     if (length == 1) {
-        /* 
+        /*
          * If this is the last element in the stack
          * then it's "root" and we should finish up
          */
-        self->root = py_yajl_ps_current(self->elements);    
-        py_yajl_ps_pop(self->elements);    
+        self->root = py_yajl_ps_current(self->elements);
+        py_yajl_ps_pop(self->elements);
         return success;
     } else if (length < 2) {
         return failure;
     }
-    
+
     /*
      * If not, then we should properly add this dict
      * to it's appropriate parent
      */
-    popped = py_yajl_ps_current(self->elements);    
-    py_yajl_ps_pop(self->elements);    
+    popped = py_yajl_ps_current(self->elements);
+    py_yajl_ps_pop(self->elements);
     last = py_yajl_ps_current(self->elements);
 
     return _PlaceObject(self, last, popped);
@@ -205,15 +209,15 @@ static int handle_end_list(void *ctx)
 
     length = py_yajl_ps_length(self->elements);
     if (length == 1) {
-        self->root = py_yajl_ps_current(self->elements);    
-        py_yajl_ps_pop(self->elements);    
+        self->root = py_yajl_ps_current(self->elements);
+        py_yajl_ps_pop(self->elements);
         return success;
     } else if (length < 2) {
         return failure;
     }
-    
-    popped = py_yajl_ps_current(self->elements);    
-    py_yajl_ps_pop(self->elements);    
+
+    popped = py_yajl_ps_current(self->elements);
+    py_yajl_ps_pop(self->elements);
     last = py_yajl_ps_current(self->elements);
 
     return _PlaceObject(self, last, popped);
@@ -221,15 +225,15 @@ static int handle_end_list(void *ctx)
 
 static yajl_callbacks decode_callbacks = {
     handle_null,
-    handle_bool, 
-    NULL, 
+    handle_bool,
+    NULL,
     NULL,
     handle_number,
     handle_string,
     handle_start_dict,
     handle_dict_key,
     handle_end_dict,
-    handle_start_list, 
+    handle_start_list,
     handle_end_list
 };
 
@@ -255,17 +259,17 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
     yajl_free(parser);
 
     if (yrc != yajl_status_ok) {
-        PyErr_SetObject(PyExc_ValueError, 
+        PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
 
     if (self->root == NULL) {
-        PyErr_SetObject(PyExc_ValueError, 
+        PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString("The root object is NULL"));
         return NULL;
     }
-    
+
     // Callee now owns memory, we'll leave refcnt at one and
     // null out our pointer.
     PyObject *root = self->root;
@@ -283,7 +287,7 @@ PyObject *py_yajldecoder_decode(PYARGS)
         return NULL;
 
     if (!buflen) {
-        PyErr_SetObject(PyExc_ValueError, 
+        PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString("Cannot parse an empty buffer"));
         return NULL;
     }

@@ -2,3 +2,8 @@
 *.pyo
 *.pyc
 build/*
+*.so
+*.egg-info
+dist
+Yajl-Tests.xml
+.buildinfo

@@ -10,6 +10,8 @@ with Yajl (Yet Another JSON Library). While modules like `jsonlib`,
 pythonic access to Yajl's extremely fast string and stream parsing 
 facilities.
 
+py-yajl fully supports Python 2.4-2.6 and Python 3.
+
 
 Building py-yajl
 -----------------

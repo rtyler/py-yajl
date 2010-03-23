@@ -1,22 +1,22 @@
 /*
  * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of R. Tyler Ballance nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -28,7 +28,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 #include <Python.h>
 
 #include "py_yajl.h"
@@ -86,7 +86,7 @@ static PyTypeObject YajlDecoderType = {
     0,                         /* tp_dictoffset */
     (initproc)(yajldecoder_init),/* tp_init */
     0,                         /* tp_alloc */
-}; 
+};
 
 static PyTypeObject YajlEncoderType = {
 #ifdef IS_PYTHON3
@@ -131,7 +131,7 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_dictoffset */
     (initproc)(yajlencoder_init),/* tp_init */
     0,                         /* tp_alloc */
-}; 
+};
 
 static PyObject *py_loads(PYARGS)
 {
@@ -143,7 +143,7 @@ static PyObject *py_loads(PYARGS)
     if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen)) {
         return NULL;
     }
-    
+
     decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
     if (decoder == NULL) {
         return NULL;
@@ -154,13 +154,59 @@ static PyObject *py_loads(PYARGS)
     return result;
 }
 
+static char *__config_gen_config(PyObject *indent, yajl_gen_config *config)
+{
+    long indentLevel = -1;
+    char *spaces = NULL;
+
+    if (!indent)
+        return NULL;
+
+    if ((indent != Py_None) && (!PyLong_Check(indent))
+#ifndef IS_PYTHON3
+            && (!PyInt_Check(indent))
+#endif
+    ) {
+        PyErr_SetObject(PyExc_TypeError,
+                PyUnicode_FromString("`indent` must be int or None"));
+        return NULL;
+    }
+
+    if (indent != Py_None) {
+        indentLevel = PyLong_AsLong(indent);
+
+        if (indentLevel >= 0) {
+            config->beautify = 1;
+            if (indentLevel == 0) {
+                config->indentString = "";
+            }
+            else {
+                spaces = (char *)(malloc(sizeof(char) * (indentLevel + 1)));
+                memset((void *)(spaces), (int)' ', indentLevel);
+                spaces[indentLevel] = '\0';
+                config->indentString = spaces;
+            }
+        }
+    }
+    return spaces;
+}
+
 static PyObject *py_dumps(PYARGS)
 {
     PyObject *encoder = NULL;
     PyObject *obj = NULL;
     PyObject *result = NULL;
+    PyObject *indent = NULL;
+    yajl_gen_config config = { 0, NULL };
+    static char *kwlist[] = {"object", "indent", NULL};
+    char *spaces = NULL;
 
-    if (!PyArg_ParseTuple(args, "O", &obj)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O|O", kwlist, &obj, &indent)) {
+        return NULL;
+    }
+
+    spaces = __config_gen_config(indent, &config);
+    if (PyErr_Occurred()) {
         return NULL;
     }
 
@@ -169,8 +215,11 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    result = _internal_encode((_YajlEncoder *)encoder, obj);
+    result = _internal_encode((_YajlEncoder *)encoder, obj, config);
     Py_XDECREF(encoder);
+    if (spaces) {
+        free(spaces);
+    }
     return result;
 }
 
@@ -181,7 +230,9 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     PyObject *stream = NULL;
     PyObject *buffer = NULL;
     PyObject *result = NULL;
+#ifdef IS_PYTHON3
     PyObject *bufferstring = NULL;
+#endif
 
     if (!PyArg_ParseTuple(args, "O", &stream)) {
         goto bad_type;
@@ -238,16 +289,11 @@ static PyObject *py_iterload(PYARGS)
 }
 
 static PyObject *__write = NULL;
-static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
+static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsigned int blocking,
+            yajl_gen_config config)
 {
     PyObject *encoder = NULL;
-    PyObject *stream = NULL;
     PyObject *buffer = NULL;
-    PyObject *object = NULL;
-
-    if (!PyArg_ParseTuple(args, "OO", &object, &stream)) {
-        goto bad_type;
-    }
 
     if (__write == NULL) {
         __write = PyUnicode_FromString("write");
@@ -262,7 +308,7 @@ static PyObject *_internal_stream_dump(PyObject *args, unsigned int blocking)
         return NULL;
     }
 
-    buffer = _internal_encode((_YajlEncoder *)encoder, object);
+    buffer = _internal_encode((_YajlEncoder *)encoder, object, config);
     PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
     Py_XDECREF(encoder);
     return Py_True;
@@ -271,26 +317,59 @@ bad_type:
     PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a stream object"));
     return NULL;
 }
+
 static PyObject *py_dump(PYARGS)
 {
-    return _internal_stream_dump(args, 0);
+    PyObject *object = NULL;
+    PyObject *indent = NULL;
+    PyObject *stream = NULL;
+    PyObject *result = NULL;
+    yajl_gen_config config = { 0, NULL };
+    static char *kwlist[] = {"object", "stream", "indent", NULL};
+    char *spaces = NULL;
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO|O", kwlist, &object, &stream, &indent)) {
+        return NULL;
+    }
+
+    spaces = __config_gen_config(indent, &config);
+    if (PyErr_Occurred()) {
+        return NULL;
+    }
+    result = _internal_stream_dump(object, stream, 0, config);
+    if (spaces) {
+        free(spaces);
+    }
+    return result;
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunction)(py_dumps), METH_VARARGS, 
-"yajl.dumps(obj)\n\n\
-Returns an encoded JSON string of the specified `obj`"},
-    {"loads", (PyCFunction)(py_loads), METH_VARARGS, 
+    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_VARARGS | METH_KEYWORDS,
+"yajl.dumps(obj [, indent=None])\n\n\
+Returns an encoded JSON string of the specified `obj`\n\
+\n\
+If `indent` is a non-negative integer, then JSON array elements \n\
+and object members will be pretty-printed with that indent level. \n\
+An indent level of 0 will only insert newlines. None (the default) \n\
+selects the most compact representation.\n\
+"},
+    {"loads", (PyCFunction)(py_loads), METH_VARARGS,
 "yajl.loads(string)\n\n\
 Returns a decoded object based on the given JSON `string`"},
-    {"load", (PyCFunction)(py_load), METH_VARARGS, 
+    {"load", (PyCFunction)(py_load), METH_VARARGS,
 "yajl.load(fp)\n\n\
 Returns a decoded object based on the JSON read from the `fp` stream-like\n\
 object; *Note:* It is expected that `fp` supports the `read()` method"},
-    {"dump", (PyCFunction)(py_dump), METH_VARARGS, 
-"yajl.dump(obj, fp)\n\n\
+    {"dump", (PyCFunctionWithKeywords)(py_dump), METH_VARARGS | METH_KEYWORDS,
+"yajl.dump(obj, fp [, indent=None])\n\n\
 Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
-*Note*: It is expected that `fp` supports the `write()` method"},
+*Note*: It is expected that `fp` supports the `write()` method\n\
+\n\
+If `indent` is a non-negative integer, then JSON array elements \n\
+and object members will be pretty-printed with that indent level. \n\
+An indent level of 0 will only insert newlines. None (the default) \n\
+selects the most compact representation.\n\
+"},
     /*
      {"iterload", (PyCFunction)(py_iterload), METH_VARARGS, NULL},
      */
@@ -306,7 +385,7 @@ static struct PyModuleDef yajlmodule = {
 PyMODINIT_FUNC inityajl(void)
 {
 
-    PyObject *module = Py_InitModule3("yajl", yajl_methods, 
+    PyObject *module = Py_InitModule3("yajl", yajl_methods,
 #endif
 "Providing a pythonic interface to the yajl (Yet Another JSON Library) parser\n\n\
 The interface is similar to that of simplejson or jsonlib providing a consistent syntax for JSON\n\
@@ -323,7 +402,7 @@ yajl.dumps():\t\t681.0221ms"
     , -1, yajl_methods, NULL, NULL, NULL, NULL
 };
 
-PyMODINIT_FUNC PyInit_yajl(void) 
+PyMODINIT_FUNC PyInit_yajl(void)
 {
     PyObject *module = PyModule_Create(&yajlmodule);
 #else

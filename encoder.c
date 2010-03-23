@@ -1,23 +1,23 @@
 
 /*
  * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
- * 
+ *
  *  1. Redistributions of source code must retain the above copyright
  *     notice, this list of conditions and the following disclaimer.
- * 
+ *
  *  2. Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in
  *     the documentation and/or other materials provided with the
  *     distribution.
- * 
+ *
  *  3. Neither the name of R. Tyler Ballance nor the names of its
  *     contributors may be used to endorse or promote products derived
  *     from this software without specific prior written permission.
- * 
+ *
  * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
  * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
  * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -29,7 +29,7 @@
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
- */ 
+ */
 
 #include <Python.h>
 
@@ -91,7 +91,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     }
     if (PyList_Check(object)) {
         /*
-         * Recurse and handle the list 
+         * Recurse and handle the list
          */
         iterator = PyObject_GetIter(object);
         if (iterator == NULL)
@@ -102,8 +102,23 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             Py_XDECREF(item);
         }
         Py_XDECREF(iterator);
-        status = yajl_gen_array_close(handle);
-        return status;
+        yajl_gen_status close_status = yajl_gen_array_close(handle);
+        if (status == yajl_gen_in_error_state)
+            return status;
+        return close_status;
+    }
+    if (PyTuple_Check(object)) {
+        /*
+         * If we have a tuple, convert to a list
+         */
+        Py_ssize_t size = PyTuple_Size(object);
+        PyObject *converted = PyList_New(size);
+        unsigned int i = 0;
+
+        for (; i < size; ++i) {
+            PyList_SET_ITEM(converted, (Py_ssize_t)(i), PyTuple_GetItem(object, i));
+        }
+        return ProcessObject(self, converted);
     }
     if (PyDict_Check(object)) {
         PyObject *key, *value;
@@ -111,13 +126,32 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 
         status = yajl_gen_map_open(handle);
         while (PyDict_Next(object, &position, &key, &value)) {
-            status = ProcessObject(self, key);
+            PyObject *newKey = key;
+
+            if ( (PyFloat_Check(key)) ||
+#ifndef IS_PYTHON3
+                (PyInt_Check(key)) ||
+#endif
+                (PyLong_Check(key)) ) {
+
+                /*
+                 * Performing the conversion separately for Python 2
+                 * and Python 3 to ensure we consistently generate
+                 * unicode strings in both versions
+                 */
+#ifdef IS_PYTHON3
+                newKey = PyObject_Str(key);
+#else
+                newKey = PyObject_Unicode(key);
+#endif
+            }
+
+            status = ProcessObject(self, newKey);
             status = ProcessObject(self, value);
         }
         return yajl_gen_map_close(handle);
     }
 
-        
     exit:
         return yajl_gen_in_error_state;
 }
@@ -125,18 +159,18 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 yajl_alloc_funcs *y_allocs = NULL;
 
 /* a structure used to pass context to our printer function */
-struct StringAndUsedCount 
+struct StringAndUsedCount
 {
     PyObject * str;
-    size_t used;    
+    size_t used;
 };
 
-    
+
 static void py_yajl_printer(void * ctx,
                             const char * str,
                             unsigned int len)
 {
-    struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;    
+    struct StringAndUsedCount * sauc = (struct StringAndUsedCount *) ctx;
     size_t newsize;
 
     if (!sauc || !sauc->str) return;
@@ -148,7 +182,7 @@ static void py_yajl_printer(void * ctx,
 #ifdef IS_PYTHON3
         _PyBytes_Resize(&(sauc->str), newsize);
 #else
-        _PyString_Resize(&(sauc->str), newsize);        
+        _PyString_Resize(&(sauc->str), newsize);
 #endif
         if (!sauc->str)
             return;
@@ -184,13 +218,14 @@ static PyObject * lowLevelStringAlloc(Py_ssize_t size)
     return (PyObject *) op;
 }
 
-PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
+PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config genconfig)
 {
     yajl_gen generator = NULL;
-    yajl_gen_config genconfig = { 0, NULL};
     yajl_gen_status status;
     struct StringAndUsedCount sauc;
+#ifdef IS_PYTHON3
     PyObject *result = NULL;
+#endif
 
     /* initialize context for our printer function which
      * performs low level string appending, using the python
@@ -213,8 +248,9 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
         return NULL;
     }
 
-    if (status != yajl_gen_status_ok) {
-        PyErr_SetObject(PyExc_ValueError, PyUnicode_FromString("Failed to process"));
+    if ( (status == yajl_gen_in_error_state) ||
+          (status != yajl_gen_status_ok) ) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
         Py_XDECREF(sauc.str);
         return NULL;
     }
@@ -233,12 +269,12 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj)
 PyObject *py_yajlencoder_encode(PYARGS)
 {
     _YajlEncoder *encoder = (_YajlEncoder *)(self);
+    yajl_gen_config config = {0, NULL};
     PyObject *value;
 
     if (!PyArg_ParseTuple(args, "O", &value))
         return NULL;
-
-    return _internal_encode(encoder, value);
+    return _internal_encode(encoder, value, config);
 }
 
 int yajlencoder_init(PYARGS)
