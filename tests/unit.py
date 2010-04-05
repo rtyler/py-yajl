@@ -286,6 +286,8 @@ if __name__ == '__main__':
     if 'xml' in sys.argv:
         import xmlrunner
         runner = xmlrunner.XMLTestRunner(filename='Yajl-Tests.xml')
-    suites = unittest.findTestCases(sys.modules[__name__])
-    results = runner.run(unittest.TestSuite(suites))
+        suites = unittest.findTestCases(sys.modules[__name__])
+        results = runner.run(unittest.TestSuite(suites))
+    else:
+        unittest.main()
 
