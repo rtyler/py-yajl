@@ -285,6 +285,15 @@ class IssueTenTest(unittest.TestCase):
         result = yajl.loads(yajl.dumps(data))
         self.assertEquals({'1': 2}, result)
 
+class IssueTwelveTest(unittest.TestCase):
+    def runTest(self):
+        normal = {'a' : 'b', 'c' : 'd'}
+        self.assertEquals(yajl.dumps(normal), '{"a":"b","c":"d"}')
+
+        if not is_python3():
+            from tests import python2
+            self.assertEquals(yajl.dumps(python2.IssueTwelveTest_dict), '{"a":"b","c":"d"}')
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)

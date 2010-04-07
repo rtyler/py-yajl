@@ -16,6 +16,7 @@ base_modules = [
                 'yajl.c',
                 'encoder.c',
                 'decoder.c',
+                'yajl_hacks.c',
                 'yajl/src/yajl_alloc.c',
                 'yajl/src/yajl_buf.c',
                 'yajl/src/yajl.c',

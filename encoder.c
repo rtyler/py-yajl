@@ -40,6 +40,10 @@
 
 static const char *hexdigit = "0123456789abcdef";
 
+/* Located in yajl_hacks.c */
+extern yajl_gen_status yajl_gen_raw_string(yajl_gen g, 
+        const unsigned char * str, unsigned int len);
+
 static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 {
     yajl_gen handle = (yajl_gen)(self->_generator);
@@ -62,10 +66,9 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
          * Create a buffer with enough space for code-points, preceeding and
          * following quotes and a null termination character
          */
-        char *buffer = (char *)(malloc(sizeof(char) * (3 + length * 6)));
+        char *buffer = (char *)(malloc(sizeof(char) * (1 + length * 6)));
         unsigned int offset = 0;
 
-        buffer[offset++] = '\"';
         while (length-- > 0) {
             Py_UNICODE ch = *raw_unicode++;
 
@@ -138,9 +141,8 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
                 continue;
             }
         }
-        buffer[offset++] = '\"';
-        buffer[offset + 1] = '\0';
-        return yajl_gen_number(handle, (const char *)(buffer), (unsigned int)(offset));
+        buffer[offset] = '\0';
+        return yajl_gen_raw_string(handle, (const unsigned char *)(buffer), (unsigned int)(offset));
     }
 #ifdef IS_PYTHON3
     if (PyBytes_Check(object)) {
