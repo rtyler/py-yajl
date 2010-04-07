@@ -181,10 +181,13 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
          */
         Py_ssize_t size = PyTuple_Size(object);
         PyObject *converted = PyList_New(size);
+        PyObject *item = NULL;
         unsigned int i = 0;
 
         for (; i < size; ++i) {
-            PyList_SET_ITEM(converted, (Py_ssize_t)(i), PyTuple_GetItem(object, i));
+            item = PyTuple_GetItem(object, i);
+            Py_INCREF(item);
+            PyList_SET_ITEM(converted, (Py_ssize_t)(i), item);
         }
         return ProcessObject(self, converted);
     }
