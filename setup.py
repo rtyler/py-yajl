@@ -36,7 +36,7 @@ packages = ('yajl',)
 setup_kwargs = dict(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '0.3.3',
+    version = '0.3.4',
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
     url = 'http://rtyler.github.com/py-yajl',
@@ -59,6 +59,8 @@ if not os.listdir('yajl'):
     print('>>> I\'ll try to do that, but if I fail, you can run:')
     print('>>>      `git submodule update --init`')
     subprocess.call(['git', 'submodule', 'update', '--init'])
+
+subprocess.call(['git', 'submodule', 'update',])
 
 if not os.path.exists('includes'):
     # Our symlink into the yajl directory isn't there, let's fixulate that
