@@ -207,7 +207,10 @@ class DumpOptionsTests(unittest.TestCase):
 class IssueSevenTest(unittest.TestCase):
     def test_latin1(self):
         ''' Testing with latin-1 for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
-        char = u'f\xe9in'
+        char = 'f\xe9in'
+        if not is_python3():
+            from tests import python2
+            char = python2.IssueSevenTest_latin1_char
         # The `json` module uses "0123456789abcdef" for its code points
         # while the yajl library uses "0123456789ABCDEF", lower()'ing
         # to make sure the resulting strings match
@@ -218,15 +221,17 @@ class IssueSevenTest(unittest.TestCase):
         self.assertEquals(out, '"\\"f\\\\u00e9in\\""')
 
         out = yajl.loads(out)
-        self.assertEquals(out, u'"f\\u00e9in"')
+        self.assertEquals(out, '"f\\u00e9in"')
 
         out = yajl.loads(out)
         self.assertEquals(out, char)
 
     def test_chinese(self):
         ''' Testing with simplified chinese for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
-        char = u'早安, 爸爸' # Good morning!
-        char = u'\u65e9\u5b89, \u7238\u7238'
+        char = '\u65e9\u5b89, \u7238\u7238'
+        if not is_python3():
+            from tests import python2
+            char = python2.IssueSevenTest_chinese_char
         out = yajl.dumps(char).lower()
         self.assertEquals(out, '"\\u65e9\\u5b89, \\u7238\\u7238"')
 
@@ -234,7 +239,7 @@ class IssueSevenTest(unittest.TestCase):
         self.assertEquals(out, '"\\"\\\\u65e9\\\\u5b89, \\\\u7238\\\\u7238\\""')
 
         out = yajl.loads(out)
-        self.assertEquals(out, u'"\\u65e9\\u5b89, \\u7238\\u7238"')
+        self.assertEquals(out, '"\\u65e9\\u5b89, \\u7238\\u7238"')
 
         out = yajl.loads(out)
         self.assertEquals(out, char)
