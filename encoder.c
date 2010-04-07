@@ -96,6 +96,16 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
                     buffer[offset++] = 'b';
                     continue;
                     break;
+                case '\\':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = '\\';
+                    continue;
+                    break;
+                case '\"':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = '\"';
+                    continue;
+                    break;
                 default:
                     break;
             }
