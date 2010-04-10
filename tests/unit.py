@@ -294,6 +294,15 @@ class IssueTwelveTest(unittest.TestCase):
             from tests import python2
             self.assertEquals(yajl.dumps(python2.IssueTwelveTest_dict), '{"a":"b","c":"d"}')
 
+class IssueSixteenTest(unittest.TestCase):
+    def runTest(self):
+        dumpable = [11889582081]
+
+        rc = yajl.dumps(dumpable)
+        self.assertEquals(rc, '[11889582081]')
+        rc = yajl.loads(rc)
+        self.assertEquals(rc, dumpable)
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)
