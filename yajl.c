@@ -409,6 +409,9 @@ PyMODINIT_FUNC PyInit_yajl(void)
 );
 #endif
 
+    PyObject *version = PyUnicode_FromString(MOD_VERSION);
+    PyModule_AddObject(module, "__version__", version);
+
     YajlDecoderType.tp_new = PyType_GenericNew;
     if (PyType_Ready(&YajlDecoderType) < 0) {
         goto bad_exit;

@@ -11,6 +11,15 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+version = '0.3.6'
+if os.path.exists('.git'):
+    try:
+        commit = subprocess.Popen(['git', 'log', '--max-count=1', '--format=%h'], stdout=subprocess.PIPE).communicate()[0]
+        version = '%s-%s' % (version, commit.strip())
+    except:
+        pass
+
+
 base_modules = [
     Extension('yajl',  [
                 'yajl.c',
@@ -26,7 +35,7 @@ base_modules = [
                 'yajl/src/yajl_parser.c',
             ],
             include_dirs=('.', 'includes/', 'yajl/src'),
-            extra_compile_args=['-Wall',],
+            extra_compile_args=['-Wall', '-DMOD_VERSION="%s"' % version],
             language='c'),
         ]
 
@@ -37,7 +46,7 @@ packages = ('yajl',)
 setup_kwargs = dict(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '0.3.6',
+    version = version,
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
     url = 'http://rtyler.github.com/py-yajl',
