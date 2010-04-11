@@ -331,7 +331,13 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config ge
 
     if ( (status == yajl_gen_in_error_state) ||
           (status != yajl_gen_status_ok) ) {
-        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
+        /*
+         * If we have an exception underneath the covers, let's raise that
+         * instead
+         */
+        if (!PyErr_Occurred()) {
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
+        }
         Py_XDECREF(sauc.str);
         return NULL;
     }
