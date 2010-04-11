@@ -296,7 +296,12 @@ class IssueTwelveTest(unittest.TestCase):
 
 class IssueThirteenTest(unittest.TestCase):
     def runTest(self):
-        import json
+        try:
+            import json
+        except ImportError:
+            # Skip the test on 2.4/2.5
+            return
+
         rc = yajl.monkeypatch()
         self.assertTrue(rc)
         self.assertEquals(sys.modules['json'], sys.modules['yajl'])
