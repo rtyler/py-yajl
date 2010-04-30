@@ -196,6 +196,10 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         if (iterator == NULL)
             goto exit;
         status = yajl_gen_array_open(handle);
+        if (status == yajl_max_depth_exceeded) {
+            Py_XDECREF(iterator);
+            goto exit;
+        }
         while ((item = PyIter_Next(iterator))) {
             status = ProcessObject(self, item);
             Py_XDECREF(item);
@@ -227,6 +231,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         Py_ssize_t position = 0;
 
         status = yajl_gen_map_open(handle);
+        if (status == yajl_max_depth_exceeded) goto exit;
         while (PyDict_Next(object, &position, &key, &value)) {
             PyObject *newKey = key;
 
@@ -249,7 +254,12 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             }
 
             status = ProcessObject(self, newKey);
+            if (status == yajl_gen_in_error_state) return status;
+            if (status == yajl_max_depth_exceeded) goto exit;
+
             status = ProcessObject(self, value);
+            if (status == yajl_gen_in_error_state) return status;
+            if (status == yajl_max_depth_exceeded) goto exit;
         }
         return yajl_gen_map_close(handle);
     }
