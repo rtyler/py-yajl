@@ -1,6 +1,5 @@
-
 /*
- * Copyright 2009, R. Tyler Ballance <tyler@monkeypox.org>
+ * Copyright 2010, R. Tyler Ballance <tyler@monkeypox.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
@@ -30,7 +29,6 @@
  * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-
 #include <Python.h>
 
 #include <yajl/yajl_parse.h>
@@ -40,12 +38,17 @@
 
 #include "py_yajl.h"
 
+static const char *hexdigit = "0123456789abcdef";
+
+/* Located in yajl_hacks.c */
+extern yajl_gen_status yajl_gen_raw_string(yajl_gen g,
+        const unsigned char * str, unsigned int len);
+
 static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 {
     yajl_gen handle = (yajl_gen)(self->_generator);
     yajl_gen_status status = yajl_gen_in_error_state;
     PyObject *iterator, *item;
-    unsigned short int decref = 0;
 
     if (object == Py_None) {
         return yajl_gen_null(handle);
@@ -57,8 +60,89 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         return yajl_gen_bool(handle, 0);
     }
     if (PyUnicode_Check(object)) {
-        object = PyUnicode_AsUTF8String(object);
-        decref = 1;
+        Py_ssize_t length = PyUnicode_GET_SIZE(object);
+        Py_UNICODE *raw_unicode = PyUnicode_AS_UNICODE(object);
+        /*
+         * Create a buffer with enough space for code-points, preceeding and
+         * following quotes and a null termination character
+         */
+        char *buffer = (char *)(malloc(sizeof(char) * (1 + length * 6)));
+        unsigned int offset = 0;
+
+        while (length-- > 0) {
+            Py_UNICODE ch = *raw_unicode++;
+
+            /* Escape escape characters */
+            switch (ch) {
+                case '\t':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = 't';
+                    continue;
+                    break;
+                case '\n':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = 'n';
+                    continue;
+                    break;
+                case '\r':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = 'r';
+                    continue;
+                    break;
+                case '\f':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = 'f';
+                    continue;
+                    break;
+                case '\b':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = 'b';
+                    continue;
+                    break;
+                case '\\':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = '\\';
+                    continue;
+                    break;
+                case '\"':
+                    buffer[offset++] = '\\';
+                    buffer[offset++] = '\"';
+                    continue;
+                    break;
+                default:
+                    break;
+            }
+
+            /* Map 16-bit characters to '\uxxxx' */
+            if (ch >= 256) {
+                buffer[offset++] = '\\';
+                buffer[offset++] = 'u';
+                buffer[offset++] = hexdigit[(ch >> 12) & 0x000F];
+                buffer[offset++] = hexdigit[(ch >> 8) & 0x000F];
+                buffer[offset++] = hexdigit[(ch >> 4) & 0x000F];
+                buffer[offset++] = hexdigit[ch & 0x000F];
+                continue;
+            }
+
+            /* Map non-printable US ASCII to '\u00hh' */
+            if ( (ch < 0x20) || (ch >= 0x7F) ) {
+                buffer[offset++] = '\\';
+                buffer[offset++] = 'u';
+                buffer[offset++] = '0';
+                buffer[offset++] = '0';
+                buffer[offset++] = hexdigit[(ch >> 4) & 0x0F];
+                buffer[offset++] = hexdigit[ch & 0x0F];
+                continue;
+            }
+
+            /* Handle proper ascii chars */
+            if ( (ch >= 0x20) && (ch < 0x7F) ) {
+                buffer[offset++] = (char)(ch);
+                continue;
+            }
+        }
+        buffer[offset] = '\0';
+        return yajl_gen_raw_string(handle, (const unsigned char *)(buffer), (unsigned int)(offset));
     }
 #ifdef IS_PYTHON3
     if (PyBytes_Check(object)) {
@@ -72,19 +156,34 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 #else
         PyString_AsStringAndSize(object, (char **)&buffer, &length);
 #endif
-        status = yajl_gen_string(handle, buffer, (unsigned int)(length));
-        if (decref) {
-            Py_XDECREF(object);
-        }
-        return status;
+        return yajl_gen_string(handle, buffer, (unsigned int)(length));
     }
 #ifndef IS_PYTHON3
     if (PyInt_Check(object)) {
-        return yajl_gen_integer(handle, PyInt_AsLong(object));
+        long number = PyInt_AsLong(object);
+        if ( (number == -1) && (PyErr_Occurred()) ) {
+            return yajl_gen_in_error_state;
+        }
+        return yajl_gen_integer(handle, number);
     }
 #endif
     if (PyLong_Check(object)) {
-        return yajl_gen_integer(handle, PyLong_AsLong(object));
+        long long number = PyLong_AsLongLong(object);
+        char *buffer = NULL;
+
+        if ( (number == -1) && (PyErr_Occurred()) ) {
+            return yajl_gen_in_error_state;;
+        }
+
+        /*
+         * Nifty trick for getting the buffer length of a long long, going
+         * to convert this long long into a buffer to be handled by
+         * yajl_gen_number()
+         */
+        unsigned int length = (unsigned int)(snprintf(NULL, 0, "%lld", number)) + 1;
+        buffer = (char *)(malloc(length));
+        snprintf(buffer, length, "%lld", number);
+        return yajl_gen_number(handle, buffer, length - 1);
     }
     if (PyFloat_Check(object)) {
         return yajl_gen_double(handle, PyFloat_AsDouble(object));
@@ -113,10 +212,13 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
          */
         Py_ssize_t size = PyTuple_Size(object);
         PyObject *converted = PyList_New(size);
+        PyObject *item = NULL;
         unsigned int i = 0;
 
         for (; i < size; ++i) {
-            PyList_SET_ITEM(converted, (Py_ssize_t)(i), PyTuple_GetItem(object, i));
+            item = PyTuple_GetItem(object, i);
+            Py_INCREF(item);
+            PyList_SET_ITEM(converted, (Py_ssize_t)(i), item);
         }
         return ProcessObject(self, converted);
     }
@@ -157,14 +259,12 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 }
 
 yajl_alloc_funcs *y_allocs = NULL;
-
 /* a structure used to pass context to our printer function */
 struct StringAndUsedCount
 {
     PyObject * str;
     size_t used;
 };
-
 
 static void py_yajl_printer(void * ctx,
                             const char * str,
@@ -250,7 +350,13 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config ge
 
     if ( (status == yajl_gen_in_error_state) ||
           (status != yajl_gen_status_ok) ) {
-        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
+        /*
+         * If we have an exception underneath the covers, let's raise that
+         * instead
+         */
+        if (!PyErr_Occurred()) {
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Object is not JSON serializable"));
+        }
         Py_XDECREF(sauc.str);
         return NULL;
     }

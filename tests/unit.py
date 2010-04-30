@@ -204,6 +204,46 @@ class DumpOptionsTests(unittest.TestCase):
         rc = yajl.dump({'foo' : 'bar'}, self.stream, indent=None)
         self.assertEquals(self.stream.getvalue(), '{"foo":"bar"}')
 
+class IssueSevenTest(unittest.TestCase):
+    def test_latin1(self):
+        ''' Testing with latin-1 for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
+        char = 'f\xe9in'
+        if not is_python3():
+            from tests import python2
+            char = python2.IssueSevenTest_latin1_char
+        # The `json` module uses "0123456789abcdef" for its code points
+        # while the yajl library uses "0123456789ABCDEF", lower()'ing
+        # to make sure the resulting strings match
+        out = yajl.dumps(char).lower()
+        self.assertEquals(out, '"f\\u00e9in"')
+
+        out = yajl.dumps(out).lower()
+        self.assertEquals(out, '"\\"f\\\\u00e9in\\""')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, '"f\\u00e9in"')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, char)
+
+    def test_chinese(self):
+        ''' Testing with simplified chinese for http://github.com/rtyler/py-yajl/issues/#issue/7 '''
+        char = '\u65e9\u5b89, \u7238\u7238'
+        if not is_python3():
+            from tests import python2
+            char = python2.IssueSevenTest_chinese_char
+        out = yajl.dumps(char).lower()
+        self.assertEquals(out, '"\\u65e9\\u5b89, \\u7238\\u7238"')
+
+        out = yajl.dumps(out).lower()
+        self.assertEquals(out, '"\\"\\\\u65e9\\\\u5b89, \\\\u7238\\\\u7238\\""')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, '"\\u65e9\\u5b89, \\u7238\\u7238"')
+
+        out = yajl.loads(out)
+        self.assertEquals(out, char)
+
 
 class IssueEightTest(unittest.TestCase):
     def runTest(self):
@@ -245,12 +285,45 @@ class IssueTenTest(unittest.TestCase):
         result = yajl.loads(yajl.dumps(data))
         self.assertEquals({'1': 2}, result)
 
+class IssueTwelveTest(unittest.TestCase):
+    def runTest(self):
+        normal = {'a' : 'b', 'c' : 'd'}
+        self.assertEquals(yajl.dumps(normal), '{"a":"b","c":"d"}')
+
+        if not is_python3():
+            from tests import python2
+            self.assertEquals(yajl.dumps(python2.IssueTwelveTest_dict), '{"a":"b","c":"d"}')
+
+class IssueThirteenTest(unittest.TestCase):
+    def runTest(self):
+        try:
+            import json
+        except ImportError:
+            # Skip the test on 2.4/2.5
+            return
+
+        rc = yajl.monkeypatch()
+        self.assertTrue(rc)
+        self.assertEquals(sys.modules['json'], sys.modules['yajl'])
+
+
+class IssueSixteenTest(unittest.TestCase):
+    def runTest(self):
+        dumpable = [11889582081]
+
+        rc = yajl.dumps(dumpable)
+        self.assertEquals(rc, '[11889582081]')
+        rc = yajl.loads(rc)
+        self.assertEquals(rc, dumpable)
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)
     if 'xml' in sys.argv:
         import xmlrunner
         runner = xmlrunner.XMLTestRunner(filename='Yajl-Tests.xml')
-    suites = unittest.findTestCases(sys.modules[__name__])
-    results = runner.run(unittest.TestSuite(suites))
+        suites = unittest.findTestCases(sys.modules[__name__])
+        results = runner.run(unittest.TestSuite(suites))
+    else:
+        unittest.main()
 

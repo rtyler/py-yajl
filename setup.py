@@ -11,11 +11,21 @@ try:
 except ImportError:
     from distutils.core import setup, Extension
 
+version = '0.3.6'
+if os.path.exists('.git'):
+    try:
+        commit = subprocess.Popen(['git', 'log', '--max-count=1', '--format=%h'], stdout=subprocess.PIPE).communicate()[0]
+        version = '%s-%s' % (version, commit.strip())
+    except:
+        pass
+
+
 base_modules = [
     Extension('yajl',  [
                 'yajl.c',
                 'encoder.c',
                 'decoder.c',
+                'yajl_hacks.c',
                 'yajl/src/yajl_alloc.c',
                 'yajl/src/yajl_buf.c',
                 'yajl/src/yajl.c',
@@ -25,7 +35,7 @@ base_modules = [
                 'yajl/src/yajl_parser.c',
             ],
             include_dirs=('.', 'includes/', 'yajl/src'),
-            extra_compile_args=['-Wall',],
+            extra_compile_args=['-Wall', '-DMOD_VERSION="%s"' % version],
             language='c'),
         ]
 
@@ -36,7 +46,7 @@ packages = ('yajl',)
 setup_kwargs = dict(
     name = 'yajl',
     description = '''A CPython module for Yet-Another-Json-Library''',
-    version = '0.3.3',
+    version = version,
     author = 'R. Tyler Ballance',
     author_email = 'tyler@monkeypox.org',
     url = 'http://rtyler.github.com/py-yajl',
@@ -59,6 +69,8 @@ if not os.listdir('yajl'):
     print('>>> I\'ll try to do that, but if I fail, you can run:')
     print('>>>      `git submodule update --init`')
     subprocess.call(['git', 'submodule', 'update', '--init'])
+
+subprocess.call(['git', 'submodule', 'update',])
 
 if not os.path.exists('includes'):
     # Our symlink into the yajl directory isn't there, let's fixulate that
