@@ -188,7 +188,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
     if (PyFloat_Check(object)) {
         return yajl_gen_double(handle, PyFloat_AsDouble(object));
     }
-    if (PyList_Check(object)) {
+    if (PyList_Check(object)||PyGen_Check(object)||PyTuple_Check(object)) {
         /*
          * Recurse and handle the list
          */
@@ -209,22 +209,6 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         if (status == yajl_gen_in_error_state)
             return status;
         return close_status;
-    }
-    if (PyTuple_Check(object)) {
-        /*
-         * If we have a tuple, convert to a list
-         */
-        Py_ssize_t size = PyTuple_Size(object);
-        PyObject *converted = PyList_New(size);
-        PyObject *item = NULL;
-        unsigned int i = 0;
-
-        for (; i < size; ++i) {
-            item = PyTuple_GetItem(object, i);
-            Py_INCREF(item);
-            PyList_SET_ITEM(converted, (Py_ssize_t)(i), item);
-        }
-        return ProcessObject(self, converted);
     }
     if (PyDict_Check(object)) {
         PyObject *key, *value;
