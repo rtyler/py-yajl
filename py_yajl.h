@@ -96,6 +96,7 @@ extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int
  * Methods defined for the YajlEncoder type in encoder.c
  */
 extern PyObject *py_yajlencoder_encode(PYARGS);
+extern PyObject* py_yajlencoder_default(PYARGS);
 extern int yajlencoder_init(PYARGS);
 extern void yajlencoder_dealloc(_YajlEncoder *self);
 extern PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config config);
