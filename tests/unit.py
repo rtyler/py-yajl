@@ -95,6 +95,14 @@ class BasicJSONEncodeTests(EncoderBase):
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
             '{"key":{"subkey":[1,2,3]}}')
+    def test_Tuple(self):
+        self.assertEncodesTo((1,2), '[1,2]')
+    def test_generator(self):
+        def f():
+            for i in range(10):
+                yield i
+        self.assertEncodesTo(f(), '[0,1,2,3,4,5,6,7,8,9]')
+
 
 
 class LoadsTest(BasicJSONDecodeTests):
