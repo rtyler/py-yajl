@@ -247,6 +247,15 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
         }
         return yajl_gen_map_close(handle);
     }
+    else {
+        object =  PyObject_CallMethod((PyObject *)self, "default", "O", object);
+        if (object==NULL)
+            goto exit;
+        status = ProcessObject(self, object);
+        return status;
+    }
+
+
 
     exit:
         return yajl_gen_in_error_state;
@@ -364,6 +373,15 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config ge
     _PyString_Resize(&sauc.str, sauc.used);
     return sauc.str;
 #endif
+}
+
+PyObject *py_yajlencoder_default(PYARGS)
+{
+    PyObject *value;
+    if (!PyArg_ParseTuple(args, "O", &value))
+        return NULL;
+    PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Not serializable to JSON"));
+    return NULL;
 }
 
 PyObject *py_yajlencoder_encode(PYARGS)
