@@ -280,10 +280,27 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
 PyObject *py_yajldecoder_decode(PYARGS)
 {
     _YajlDecoder *decoder = (_YajlDecoder *)(self);
+    PyObject *pybuffer;
+    PyObject *decoded;
     char *buffer = NULL;
     unsigned int buflen = 0;
 
-    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen))
+    if (!PyArg_ParseTuple(args, "O", &pybuffer))
+        return NULL;
+
+    if (PyUnicode_Check(pybuffer)) {
+        decoded = PyUnicode_AsUTF8String(pybuffer);
+        Py_DECREF(pybuffer);
+        pybuffer = decoded;
+    }
+
+    if (!PyString_Check(pybuffer)) {
+        PyErr_SetString(PyExc_TypeError, "string or unicode required");
+        Py_DECREF(pybuffer);
+        return NULL;
+    }
+
+    if ((PyString_AsStringAndSize(pybuffer, &buffer, &buflen) < 0))
         return NULL;
 
     if (!buflen) {
