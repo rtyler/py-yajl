@@ -95,6 +95,21 @@ class BasicJSONEncodeTests(EncoderBase):
     def test_NestedDictAndList(self):
         self.assertEncodesTo({'key' : {'subkey' : [1,2,3]}},
             '{"key":{"subkey":[1,2,3]}}')
+    def test_Tuple(self):
+        self.assertEncodesTo((1,2), '[1,2]')
+    def test_generator(self):
+        def f():
+            for i in range(10):
+                yield i
+        self.assertEncodesTo(f(), '[0,1,2,3,4,5,6,7,8,9]')
+    def test_default(self):
+        class MyEncode(yajl.Encoder):
+            def default(self, obj):
+                return ['foo']
+        rc = MyEncode().encode(MyEncode) #not supported directly -- will call default
+        assert rc == '["foo"]', ('Failed to encode JSON correctly', locals())
+        return True
+
 
 
 class LoadsTest(BasicJSONDecodeTests):
