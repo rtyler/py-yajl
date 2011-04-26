@@ -281,9 +281,9 @@ PyObject *py_yajldecoder_decode(PYARGS)
 {
     _YajlDecoder *decoder = (_YajlDecoder *)(self);
     char *buffer = NULL;
-    unsigned int buflen = 0;
+    Py_ssize_t buflen = 0;
 
-    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen))
+    if (utf8_z_hash_arg(self, args, kwargs, &buffer, &buflen))
         return NULL;
 
     if (!buflen) {
@@ -291,7 +291,7 @@ PyObject *py_yajldecoder_decode(PYARGS)
                 PyUnicode_FromString("Cannot parse an empty buffer"));
         return NULL;
     }
-    return _internal_decode(decoder, buffer, buflen);
+    return _internal_decode(decoder, buffer, (unsigned int)buflen);
 }
 
 int yajldecoder_init(PYARGS)
