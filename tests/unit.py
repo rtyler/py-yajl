@@ -331,6 +331,16 @@ class IssueSixteenTest(unittest.TestCase):
         rc = yajl.loads(rc)
         self.assertEquals(rc, dumpable)
 
+
+class IssueTwentySevenTest(unittest.TestCase):
+    "https://github.com/rtyler/py-yajl/issues/27"
+    def runTest(self):
+        u = u'[{"data":"Podstawow\u0105 opiek\u0119 zdrowotn\u0105"}]'
+        self.assertEqual(
+                yajl.dumps(yajl.loads(u)),
+                '[{"data":"Podstawow\\u0105 opiek\\u0119 zdrowotn\\u0105"}]')
+
+
 if __name__ == '__main__':
     verbosity = '-v' in sys.argv and 2 or 1
     runner = unittest.TextTestRunner(verbosity=verbosity)

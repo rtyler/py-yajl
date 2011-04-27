@@ -138,10 +138,35 @@ static PyObject *py_loads(PYARGS)
 {
     PyObject *decoder = NULL;
     PyObject *result = NULL;
+    PyObject *pybuffer = NULL;
     char *buffer = NULL;
-    unsigned int buflen = 0;
+    Py_ssize_t buflen = 0;
 
-    if (!PyArg_ParseTuple(args, "z#", &buffer, &buflen)) {
+    if (!PyArg_ParseTuple(args, "O", &pybuffer))
+        return NULL;
+
+    Py_INCREF(pybuffer);
+
+    if (PyUnicode_Check(pybuffer)) {
+        if (!(result = PyUnicode_AsUTF8String(pybuffer))) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+        Py_DECREF(pybuffer);
+        pybuffer = result;
+        result = NULL;
+    }
+
+    if (PyString_Check(pybuffer)) {
+        if (PyString_AsStringAndSize(pybuffer, &buffer, &buflen)) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+    } else {
+        /* really seems like this should be a TypeError, but
+           tests/unit.py:ErrorCasesTests.test_None disagrees */
+        Py_DECREF(pybuffer);
+        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
         return NULL;
     }
 
@@ -150,7 +175,9 @@ static PyObject *py_loads(PYARGS)
         return NULL;
     }
 
-    result = _internal_decode((_YajlDecoder *)decoder, buffer, buflen);
+    result = _internal_decode(
+            (_YajlDecoder *)decoder, buffer, (unsigned int)buflen);
+    Py_DECREF(pybuffer);
     Py_XDECREF(decoder);
     return result;
 }
