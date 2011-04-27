@@ -282,7 +282,7 @@ PyObject *py_yajldecoder_decode(PYARGS)
     _YajlDecoder *decoder = (_YajlDecoder *)(self);
     char *buffer = NULL;
     PyObject *pybuffer = NULL;
-    PyObject *alternate = NULL;
+    PyObject *result = NULL;
     Py_ssize_t buflen = 0;
 
     if (!PyArg_ParseTuple(args, "O", &pybuffer))
@@ -291,12 +291,13 @@ PyObject *py_yajldecoder_decode(PYARGS)
     Py_INCREF(pybuffer);
 
     if (PyUnicode_Check(pybuffer)) {
-        if (!(alternate = PyUnicode_AsUTF8String(pybuffer))) {
+        if (!(result = PyUnicode_AsUTF8String(pybuffer))) {
             Py_DECREF(pybuffer);
             return NULL;
         }
         Py_DECREF(pybuffer);
-        pybuffer = alternate;
+        pybuffer = result;
+        result = NULL;
     }
 
     if (PyString_Check(pybuffer)) {
@@ -317,7 +318,10 @@ PyObject *py_yajldecoder_decode(PYARGS)
                 PyUnicode_FromString("Cannot parse an empty buffer"));
         return NULL;
     }
-    return _internal_decode(decoder, buffer, (unsigned int)buflen);
+
+    result = _internal_decode(decoder, buffer, (unsigned int)buflen);
+    Py_DECREF(pybuffer);
+    return result;
 }
 
 int yajldecoder_init(PYARGS)
