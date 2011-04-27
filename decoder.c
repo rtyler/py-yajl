@@ -281,10 +281,36 @@ PyObject *py_yajldecoder_decode(PYARGS)
 {
     _YajlDecoder *decoder = (_YajlDecoder *)(self);
     char *buffer = NULL;
+    PyObject *pybuffer = NULL;
+    PyObject *alternate = NULL;
     Py_ssize_t buflen = 0;
 
-    if (utf8_z_hash_arg(self, args, kwargs, &buffer, &buflen))
+    if (!PyArg_ParseTuple(args, "O", &pybuffer))
         return NULL;
+
+    Py_INCREF(pybuffer);
+
+    if (PyUnicode_Check(pybuffer)) {
+        if (!(alternate = PyUnicode_AsUTF8String(pybuffer))) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+        Py_DECREF(pybuffer);
+        pybuffer = alternate;
+    }
+
+    if (PyString_Check(pybuffer)) {
+        if (PyString_AsStringAndSize(pybuffer, &buffer, &buflen)) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+    } else {
+        /* really seems like this should be a TypeError, but
+           tests/unit.py:ErrorCasesTests.test_None disagrees */
+        Py_DECREF(pybuffer);
+        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
+        return NULL;
+    }
 
     if (!buflen) {
         PyErr_SetObject(PyExc_ValueError,
