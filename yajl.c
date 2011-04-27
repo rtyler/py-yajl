@@ -134,45 +134,41 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 };
 
-int utf8_z_hash_arg(PYARGS, char **buffer, Py_ssize_t *buflen) {
-    PyObject *pybuffer;
-    PyObject *pystr;
-    int rc;
-
-    if (!PyArg_ParseTuple(args, "O", &pybuffer))
-        return -1;
-    Py_INCREF(pybuffer);
-
-    if (PyUnicode_Check(pybuffer)) {
-        pystr = PyUnicode_AsUTF8String(pybuffer);
-        if (!pystr) return -1;
-
-        Py_DECREF(pybuffer);
-        pybuffer = pystr;
-    }
-
-    if (!PyString_Check(pybuffer)) {
-        /* really seems like this should be a TypeError,
-         * but tests/unit.py:ErrorCasesTests.test_None disagrees
-         */
-        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
-        return -1;
-    }
-
-    rc = PyString_AsStringAndSize(pybuffer, buffer, buflen);
-    Py_DECREF(pybuffer);
-    return rc;
-}
-
 static PyObject *py_loads(PYARGS)
 {
     PyObject *decoder = NULL;
     PyObject *result = NULL;
+    PyObject *pybuffer = NULL;
     char *buffer = NULL;
     Py_ssize_t buflen = 0;
 
-    if (utf8_z_hash_arg(self, args, kwargs, &buffer, &buflen))
+    if (!PyArg_ParseTuple(args, "O", &pybuffer))
         return NULL;
+
+    Py_INCREF(pybuffer);
+
+    if (PyUnicode_Check(pybuffer)) {
+        if (!(result = PyUnicode_AsUTF8String(pybuffer))) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+        Py_DECREF(pybuffer);
+        pybuffer = result;
+        result = NULL;
+    }
+
+    if (PyString_Check(pybuffer)) {
+        if (PyString_AsStringAndSize(pybuffer, &buffer, &buflen)) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+    } else {
+        /* really seems like this should be a TypeError, but
+           tests/unit.py:ErrorCasesTests.test_None disagrees */
+        Py_DECREF(pybuffer);
+        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
+        return NULL;
+    }
 
     decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
     if (decoder == NULL) {
@@ -181,6 +177,7 @@ static PyObject *py_loads(PYARGS)
 
     result = _internal_decode(
             (_YajlDecoder *)decoder, buffer, (unsigned int)buflen);
+    Py_DECREF(pybuffer);
     Py_XDECREF(decoder);
     return result;
 }
