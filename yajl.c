@@ -393,7 +393,7 @@ static PyObject *py_monkeypatch(PYARGS)
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunctionWithKeywords)py_dumps, METH_VARARGS | METH_KEYWORDS,
+    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_VARARGS | METH_KEYWORDS,
 "yajl.dumps(obj [, indent=None])\n\n\
 Returns an encoded JSON string of the specified `obj`\n\
 \n\
