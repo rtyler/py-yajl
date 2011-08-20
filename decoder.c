@@ -258,6 +258,7 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
 
     if (yrc != yajl_status_ok) {
+        yajl_free(parser);
         PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
