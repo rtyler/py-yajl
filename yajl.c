@@ -182,7 +182,7 @@ static PyObject *py_loads(PYARGS)
     return result;
 }
 
-static char *__config_gen_config(PyObject *indent, yajl_gen_config *config)
+static char *__config_gen_config(PyObject *indent, yajl_gen *config)
 {
     long indentLevel = -1;
     char *spaces = NULL;
@@ -204,15 +204,15 @@ static char *__config_gen_config(PyObject *indent, yajl_gen_config *config)
         indentLevel = PyLong_AsLong(indent);
 
         if (indentLevel >= 0) {
-            config->beautify = 1;
+            yajl_gen_config(*config,yajl_gen_beautify, 1);
             if (indentLevel == 0) {
-                config->indentString = "";
+                yajl_gen_config(*config, yajl_gen_indent_string, "");
             }
             else {
                 spaces = (char *)(malloc(sizeof(char) * (indentLevel + 1)));
                 memset((void *)(spaces), (int)' ', indentLevel);
                 spaces[indentLevel] = '\0';
-                config->indentString = spaces;
+                yajl_gen_config(*config, yajl_gen_indent_string,spaces);
             }
         }
     }
@@ -225,7 +225,7 @@ static PyObject *py_dumps(PYARGS)
     PyObject *obj = NULL;
     PyObject *result = NULL;
     PyObject *indent = NULL;
-    yajl_gen_config config = { 0, NULL };
+    yajl_gen gen;
     static char *kwlist[] = {"object", "indent", NULL};
     char *spaces = NULL;
 
@@ -233,7 +233,8 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    spaces = __config_gen_config(indent, &config);
+    gen = yajl_gen_alloc(NULL);
+    spaces = __config_gen_config(indent, &gen);
     if (PyErr_Occurred()) {
         return NULL;
     }
@@ -243,7 +244,7 @@ static PyObject *py_dumps(PYARGS)
         return NULL;
     }
 
-    result = _internal_encode((_YajlEncoder *)encoder, obj, config);
+    result = _internal_encode((_YajlEncoder *)encoder, obj, gen);
     Py_XDECREF(encoder);
     if (spaces) {
         free(spaces);
@@ -318,7 +319,7 @@ static PyObject *py_iterload(PYARGS)
 
 static PyObject *__write = NULL;
 static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsigned int blocking,
-            yajl_gen_config config)
+            yajl_gen gen)
 {
     PyObject *encoder = NULL;
     PyObject *buffer = NULL;
@@ -336,7 +337,7 @@ static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsig
         return NULL;
     }
 
-    buffer = _internal_encode((_YajlEncoder *)encoder, object, config);
+    buffer = _internal_encode((_YajlEncoder *)encoder, object, gen);
     PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
     Py_XDECREF(encoder);
     return Py_True;
@@ -352,7 +353,7 @@ static PyObject *py_dump(PYARGS)
     PyObject *indent = NULL;
     PyObject *stream = NULL;
     PyObject *result = NULL;
-    yajl_gen_config config = { 0, NULL };
+    yajl_gen gen;
     static char *kwlist[] = {"object", "stream", "indent", NULL};
     char *spaces = NULL;
 
@@ -360,11 +361,12 @@ static PyObject *py_dump(PYARGS)
         return NULL;
     }
 
-    spaces = __config_gen_config(indent, &config);
+    gen = yajl_gen_alloc(NULL);
+    spaces = __config_gen_config(indent, &gen);
     if (PyErr_Occurred()) {
         return NULL;
     }
-    result = _internal_stream_dump(object, stream, 0, config);
+    result = _internal_stream_dump(object, stream, 0, gen);
     if (spaces) {
         free(spaces);
     }
@@ -390,7 +392,7 @@ static PyObject *py_monkeypatch(PYARGS)
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_VARARGS | METH_KEYWORDS,
+    {"dumps", (PyCFunctionWithKeywords)py_dumps, METH_VARARGS | METH_KEYWORDS,
 "yajl.dumps(obj [, indent=None])\n\n\
 Returns an encoded JSON string of the specified `obj`\n\
 \n\

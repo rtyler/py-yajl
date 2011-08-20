@@ -94,7 +94,7 @@ static int handle_bool(void *ctx, int value)
     return PlaceObject(ctx, PyBool_FromLong((long)(value)));
 }
 
-static int handle_number(void *ctx, const char *value, unsigned int length)
+static int handle_number(void *ctx, const char *value, size_t length)
 {
     _YajlDecoder *self = (_YajlDecoder *)(ctx);
     PyObject *object;
@@ -134,7 +134,7 @@ static int handle_number(void *ctx, const char *value, unsigned int length)
     return PlaceObject(self, object);
 }
 
-static int handle_string(void *ctx, const unsigned char *value, unsigned int length)
+static int handle_string(void *ctx, const unsigned char *value, size_t length)
 {
     return PlaceObject(ctx, PyUnicode_FromStringAndSize((char *)value, length));
 }
@@ -149,7 +149,7 @@ static int handle_start_dict(void *ctx)
     return success;
 }
 
-static int handle_dict_key(void *ctx, const unsigned char *value, unsigned int length)
+static int handle_dict_key(void *ctx, const unsigned char *value, size_t length)
 {
     PyObject *object = PyUnicode_FromStringAndSize((const char *) value, length);
 
@@ -241,7 +241,6 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
 {
     yajl_handle parser = NULL;
     yajl_status yrc;
-    yajl_parser_config config = { 1, 1 };
 
     if (self->elements.used > 0) {
         py_yajl_ps_free(self->elements);
@@ -253,9 +252,18 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
     }
 
     /* callbacks, config, allocfuncs */
-    parser = yajl_alloc(&decode_callbacks, &config, NULL, (void *)(self));
+    parser = yajl_alloc(&decode_callbacks,NULL, (void *)(self));
+    yajl_config(parser,yajl_allow_comments,1);
+    yajl_config(parser,yajl_dont_validate_strings,0);
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
-    yajl_parse_complete(parser);
+
+    if (yrc != yajl_status_ok) {
+        PyErr_SetObject(PyExc_ValueError,
+                PyUnicode_FromString(yajl_status_to_string(yrc)));
+        return NULL;
+    }
+
+    yrc = yajl_complete_parse(parser);
     yajl_free(parser);
 
     if (yrc != yajl_status_ok) {

@@ -42,7 +42,7 @@ static const char *hexdigit = "0123456789abcdef";
 
 /* Located in yajl_hacks.c */
 extern yajl_gen_status yajl_gen_raw_string(yajl_gen g,
-        const unsigned char * str, unsigned int len);
+        const char * str, unsigned int len);
 
 static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
 {
@@ -142,7 +142,7 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             }
         }
         buffer[offset] = '\0';
-        return yajl_gen_raw_string(handle, (const unsigned char *)(buffer), (unsigned int)(offset));
+        return yajl_gen_raw_string(handle, (const char *)(buffer), (unsigned int)(offset));
     }
 #ifdef IS_PYTHON3
     if (PyBytes_Check(object)) {
@@ -321,9 +321,8 @@ static PyObject * lowLevelStringAlloc(Py_ssize_t size)
     return (PyObject *) op;
 }
 
-PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config genconfig)
+PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen gen)
 {
-    yajl_gen generator = NULL;
     yajl_gen_status status;
     struct StringAndUsedCount sauc;
 #ifdef IS_PYTHON3
@@ -336,13 +335,13 @@ PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config ge
     sauc.used = 0;
     sauc.str = lowLevelStringAlloc(PY_YAJL_CHUNK_SZ);
 
-    generator = yajl_gen_alloc2(py_yajl_printer, &genconfig, NULL, (void *) &sauc);
+    yajl_gen_config(gen,yajl_gen_print_callback,py_yajl_printer,(void *) &sauc);
 
-    self->_generator = generator;
+    self->_generator = gen;
 
     status = ProcessObject(self, obj);
 
-    yajl_gen_free(generator);
+    yajl_gen_free(gen);
     self->_generator = NULL;
 
     /* if resize failed inside our printer function we'll have a null sauc.str */
@@ -387,12 +386,13 @@ PyObject *py_yajlencoder_default(PYARGS)
 PyObject *py_yajlencoder_encode(PYARGS)
 {
     _YajlEncoder *encoder = (_YajlEncoder *)(self);
-    yajl_gen_config config = {0, NULL};
+    yajl_gen gen;
+    gen = yajl_gen_alloc(NULL);
     PyObject *value;
 
     if (!PyArg_ParseTuple(args, "O", &value))
         return NULL;
-    return _internal_encode(encoder, value, config);
+    return _internal_encode(encoder, value, gen);
 }
 
 int yajlencoder_init(PYARGS)
