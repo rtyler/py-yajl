@@ -33,6 +33,9 @@
 
 #include "py_yajl.h"
 
+/* As the name says, an empty tuple. */
+static PyObject *empty_tuple;
+
 static PyMethodDef yajldecoder_methods[] = {
     {"decode", (PyCFunction)(py_yajldecoder_decode), METH_VARARGS, NULL},
     {NULL}
@@ -170,7 +173,7 @@ static PyObject *py_loads(PYARGS)
         return NULL;
     }
 
-    decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
+    decoder = PyObject_CallObject((PyObject *)(&YajlDecoderType), empty_tuple);
     if (decoder == NULL) {
         return NULL;
     }
@@ -286,7 +289,7 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
         return NULL;
 #endif
 
-    decoder = PyObject_Call((PyObject *)(&YajlDecoderType), NULL, NULL);
+    decoder = PyObject_CallObject((PyObject *)(&YajlDecoderType), empty_tuple);
     if (decoder == NULL) {
         return NULL;
     }

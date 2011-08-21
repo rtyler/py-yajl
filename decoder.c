@@ -257,6 +257,9 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
     parser = yajl_alloc(&decode_callbacks,NULL, (void *)(self));
     yajl_config(parser,yajl_allow_comments,1);
     yajl_config(parser,yajl_dont_validate_strings,0);
+    if (PyLong_AsUnsignedLongMask(self->allow_multiple_values) == 1) {
+        yajl_config(parser,yajl_allow_multiple_values,1);
+    }
     yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
 
     if (yrc != yajl_status_ok) {
@@ -336,11 +339,30 @@ PyObject *py_yajldecoder_decode(PYARGS)
 
 int yajldecoder_init(PYARGS)
 {
+    PyObject *allow_multiple_values = NULL;
+
+    static char *kwlist[] = {"allow_multiple_values",NULL};
+
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwlist, &allow_multiple_values)) {
+        return -1;
+    }
+    
+    if (allow_multiple_values) {
+        if (!PyBool_Check(allow_multiple_values)) {
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("allow_multiple_values must be a bool"));
+            return -1;
+        }
+    } else {
+        // default to false
+        allow_multiple_values = Py_False;
+    }
+           
     _YajlDecoder *me = (_YajlDecoder *)(self);
     py_yajl_ps_init(me->elements);
     py_yajl_ps_init(me->keys);
     me->root = NULL;
     me->decoded_objects = PyList_New(0);
+    me->allow_multiple_values = allow_multiple_values;
 
     return 0;
 }

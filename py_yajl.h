@@ -50,6 +50,7 @@ typedef struct {
     py_yajl_bytestack keys;
     PyObject *root;
     PyObject *decoded_objects;
+    PyObject *allow_multiple_values;
 
 } _YajlDecoder;
 
