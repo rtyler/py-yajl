@@ -47,6 +47,18 @@ static PyMethodDef yajlencoder_methods[] = {
     {NULL}
 };
 
+static PySequenceMethods decoder_as_sequence = {
+    (lenfunc)decoder_len,               /* sq_length */
+    0,                                  /* sq_concat */
+    0,                                  /* sq_repeat */
+    0,                                  /* sq_item */
+    0,                                  /* sq_slice */
+    0,                                  /* sq_ass_item */
+    0,                                  /* sq_ass_slice */
+    0,                                  /* sq_contains */
+};
+
+
 static PyTypeObject YajlDecoderType = {
 #ifdef IS_PYTHON3
     PyVarObject_HEAD_INIT(NULL, 0)
@@ -64,7 +76,7 @@ static PyTypeObject YajlDecoderType = {
     0,                         /*tp_compare*/
     0,                         /*tp_repr*/
     0,                         /*tp_as_number*/
-    0,                         /*tp_as_sequence*/
+    &decoder_as_sequence,      /*tp_as_sequence*/
     0,                         /*tp_as_mapping*/
     0,                         /*tp_hash */
     0,                         /*tp_call*/

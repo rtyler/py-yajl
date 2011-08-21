@@ -94,6 +94,7 @@ extern PyObject *py_yajldecoder_decode(PYARGS);
 extern int yajldecoder_init(PYARGS);
 extern void yajldecoder_dealloc(_YajlDecoder *self);
 extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen);
+extern Py_ssize_t decoder_len(_YajlDecoder *self);
 
 
 /*
