@@ -337,6 +337,11 @@ PyObject *py_yajldecoder_decode(PYARGS)
     return result;
 }
 
+Py_ssize_t decoder_len(_YajlDecoder *self)
+{
+    return PySequence_Size(self->decoded_objects);
+}
+
 int yajldecoder_init(PYARGS)
 {
     PyObject *allow_multiple_values = NULL;
