@@ -76,7 +76,8 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
          * we should only be handling "primitive types" i.e. strings and
          * numbers, not dict/list.
          */
-        self->root = object;
+        PyList_Append(self->decoded_objects,object);
+        Py_DECREF(object);
         return success;
     }
     return _PlaceObject(self, py_yajl_ps_current(self->elements), object);
@@ -172,7 +173,7 @@ static int handle_end_dict(void *ctx)
          * If this is the last element in the stack
          * then it's "root" and we should finish up
          */
-        self->root = py_yajl_ps_current(self->elements);
+        PyList_Append(self->decoded_objects,py_yajl_ps_current(self->elements));
         py_yajl_ps_pop(self->elements);
         return success;
     } else if (length < 2) {
@@ -209,7 +210,7 @@ static int handle_end_list(void *ctx)
 
     length = py_yajl_ps_length(self->elements);
     if (length == 1) {
-        self->root = py_yajl_ps_current(self->elements);
+        PyList_Append(self->decoded_objects,py_yajl_ps_current(self->elements));
         py_yajl_ps_pop(self->elements);
         return success;
     } else if (length < 2) {
@@ -241,6 +242,7 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
 {
     yajl_handle parser = NULL;
     yajl_status yrc;
+    int len;
 
     if (self->elements.used > 0) {
         py_yajl_ps_free(self->elements);
@@ -272,17 +274,16 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
                 PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
-
-    if (self->root == NULL) {
+    
+    len = PySequence_Size(self->decoded_objects); 
+    if (len == 0) {
         PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString("The root object is NULL"));
         return NULL;
     }
 
-    // Callee now owns memory, we'll leave refcnt at one and
-    // null out our pointer.
-    PyObject *root = self->root;
-    self->root = NULL;
+    PyObject *root = PySequence_GetItem(self->decoded_objects,0);
+    PySequence_DelItem(self->decoded_objects,0);
     return root;
 }
 
@@ -339,6 +340,7 @@ int yajldecoder_init(PYARGS)
     py_yajl_ps_init(me->elements);
     py_yajl_ps_init(me->keys);
     me->root = NULL;
+    me->decoded_objects = PyList_New(0);
 
     return 0;
 }
@@ -351,6 +353,9 @@ void yajldecoder_dealloc(_YajlDecoder *self)
     py_yajl_ps_init(self->keys);
     if (self->root) {
         Py_XDECREF(self->root);
+    }
+    if (self->decoded_objects) {
+        Py_XDECREF(self->decoded_objects);
     }
 #ifdef IS_PYTHON3
     Py_TYPE(self)->tp_free((PyObject*)self);
