@@ -52,7 +52,11 @@ typedef struct {
     PyObject *root;
     PyObject *decoded_objects;
     PyObject *allow_multiple_values;
+    PyObject *stream;
+    PyObject *bufsize;
     yajl_handle parser;
+    
+
 } _YajlDecoder;
 
 typedef struct {
@@ -91,12 +95,13 @@ enum { failure, success };
 /*
  * Methods defined for the YajlDecoder type in decoder.c
  */
-extern PyObject *py_yajldecoder_decode(PyObject *self, PyObject *args);
+extern PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args);
 extern int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs);
 extern void yajldecoder_dealloc(_YajlDecoder *self);
 extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen);
 extern PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args);
 extern Py_ssize_t decoder_len(_YajlDecoder *self);
+extern PyObject *_fetchObject(_YajlDecoder *self);
 
 
 /*
