@@ -193,6 +193,9 @@ static PyObject *py_loads(PYARGS)
 
     result = _internal_decode(
             (_YajlDecoder *)decoder, buffer, (unsigned int)buflen);
+    if (result != NULL) {
+        result = _fetchObject((_YajlDecoder *)decoder);
+    }    
     Py_DECREF(pybuffer);
     Py_XDECREF(decoder);
     return result;
@@ -315,6 +318,9 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     result = _internal_decode((_YajlDecoder *)decoder, PyString_AsString(buffer),
                   PyString_Size(buffer));
 #endif
+    if (result != NULL) {
+        result = _fetchObject((_YajlDecoder *)decoder);
+    }
     Py_XDECREF(decoder);
     Py_XDECREF(buffer);
     return result;
