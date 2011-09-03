@@ -38,6 +38,7 @@ static PyObject *empty_tuple;
 
 static PyMethodDef yajldecoder_methods[] = {
     {"decode", (PyCFunction)(py_yajldecoder_decode), METH_VARARGS, NULL},
+    {"reset",  (PyCFunction)(py_yajldecoder_reset), METH_VARARGS, NULL},
     {NULL}
 };
 

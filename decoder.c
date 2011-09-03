@@ -237,40 +237,23 @@ static yajl_callbacks decode_callbacks = {
     handle_start_list,
     handle_end_list
 };
-
+/*
+Parse the contents of *buffer using the yajl json parser
+*/
 PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen)
 {
-    yajl_handle parser = NULL;
     yajl_status yrc;
     int len;
 
-    if (self->elements.used > 0) {
-        py_yajl_ps_free(self->elements);
-        py_yajl_ps_init(self->elements);
-    }
-    if (self->keys.used > 0) {
-        py_yajl_ps_free(self->keys);
-        py_yajl_ps_init(self->keys);
-    }
-
-    /* callbacks, config, allocfuncs */
-    parser = yajl_alloc(&decode_callbacks,NULL, (void *)(self));
-    yajl_config(parser,yajl_allow_comments,1);
-    yajl_config(parser,yajl_dont_validate_strings,0);
-    if (PyLong_AsUnsignedLongMask(self->allow_multiple_values) == 1) {
-        yajl_config(parser,yajl_allow_multiple_values,1);
-    }
-    yrc = yajl_parse(parser, (const unsigned char *)(buffer), buflen);
+    yrc = yajl_parse(self->parser, (const unsigned char *)(buffer), buflen);
 
     if (yrc != yajl_status_ok) {
-        yajl_free(parser);
         PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
 
-    yrc = yajl_complete_parse(parser);
-    yajl_free(parser);
+    yrc = yajl_complete_parse(self->parser);
 
     if (yrc != yajl_status_ok) {
         PyErr_SetObject(PyExc_ValueError,
@@ -290,7 +273,10 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
     return root;
 }
 
-PyObject *py_yajldecoder_decode(PYARGS)
+/*
+External interface "decode" 
+*/
+PyObject *py_yajldecoder_decode(PyObject *self, PyObject *args)
 {
     _YajlDecoder *decoder = (_YajlDecoder *)(self);
     char *buffer = NULL;
@@ -337,14 +323,58 @@ PyObject *py_yajldecoder_decode(PYARGS)
     return result;
 }
 
+/*
+Reset the parser to its starting state
+This will also setup the parser for the first time
+*/
+PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args)
+{
+    // reset pointer structures
+    if (self->elements.used > 0) {
+        py_yajl_ps_free(self->elements);
+        py_yajl_ps_init(self->elements);
+    }
+
+    if (self->keys.used > 0) {
+        py_yajl_ps_free(self->keys);
+        py_yajl_ps_init(self->keys);
+    }
+
+    // reset decoded object list
+    Py_XDECREF(self->decoded_objects);
+    self->decoded_objects = PyList_New(0);
+
+    // reset the parser
+    if (self->parser) {
+        yajl_free(self->parser);
+    } 
+
+    self->parser = yajl_alloc(&decode_callbacks,NULL, (void *)(self));
+    yajl_config(self->parser,yajl_allow_comments,1);
+    yajl_config(self->parser,yajl_dont_validate_strings,0);
+    if (PyLong_AsUnsignedLongMask(self->allow_multiple_values) == 1) {
+        yajl_config(self->parser,yajl_allow_multiple_values,1);
+    }
+    Py_INCREF(Py_None);
+    return Py_None;
+}
+
+/*
+Return the number of decoded objects in the internal buffer
+Useful if allow_multiple_values is enabled
+*/
 Py_ssize_t decoder_len(_YajlDecoder *self)
 {
     return PySequence_Size(self->decoded_objects);
 }
 
-int yajldecoder_init(PYARGS)
+/*
+Init the decoder python object
+*/
+int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *allow_multiple_values = NULL;
+    PyObject *result = NULL;
 
     static char *kwlist[] = {"allow_multiple_values",NULL};
 
@@ -361,14 +391,20 @@ int yajldecoder_init(PYARGS)
         // default to false
         allow_multiple_values = Py_False;
     }
-           
-    _YajlDecoder *me = (_YajlDecoder *)(self);
-    py_yajl_ps_init(me->elements);
-    py_yajl_ps_init(me->keys);
-    me->root = NULL;
-    me->decoded_objects = PyList_New(0);
-    me->allow_multiple_values = allow_multiple_values;
 
+    // basic setup
+    _YajlDecoder *me = (_YajlDecoder *)(self);
+    me->allow_multiple_values = allow_multiple_values;
+    py_yajl_ps_init(me->elements);
+    py_yajl_ps_init(me->keys); 
+
+    // reset method also initialises data structures
+    result = PyObject_CallMethod(self,"reset",NULL); 
+    if (!result) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("failed to call self.reset()"));
+        return -1;
+    } 
+    Py_XDECREF(result);
     return 0;
 }
 
@@ -378,9 +414,6 @@ void yajldecoder_dealloc(_YajlDecoder *self)
     py_yajl_ps_init(self->elements);
     py_yajl_ps_free(self->keys);
     py_yajl_ps_init(self->keys);
-    if (self->root) {
-        Py_XDECREF(self->root);
-    }
     if (self->decoded_objects) {
         Py_XDECREF(self->decoded_objects);
     }
@@ -389,4 +422,8 @@ void yajldecoder_dealloc(_YajlDecoder *self)
 #else
     self->ob_type->tp_free((PyObject*)self);
 #endif
+
+    if (self->parser) {
+        yajl_free(self->parser);
+    }
 }
