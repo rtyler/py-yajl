@@ -328,10 +328,6 @@ static PyObject *py_load(PYARGS)
 {
     return _internal_stream_load(args, 1);
 }
-static PyObject *py_iterload(PYARGS)
-{
-    return _internal_stream_load(args, 0);
-}
 
 static PyObject *__write = NULL;
 static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsigned int blocking,
@@ -408,7 +404,7 @@ static PyObject *py_monkeypatch(PYARGS)
 }
 
 static struct PyMethodDef yajl_methods[] = {
-    {"dumps", (PyCFunctionWithKeywords)(py_dumps), METH_VARARGS | METH_KEYWORDS,
+    {"dumps", (PyCFunction)(py_dumps), METH_VARARGS | METH_KEYWORDS,
 "yajl.dumps(obj [, indent=None])\n\n\
 Returns an encoded JSON string of the specified `obj`\n\
 \n\
@@ -424,7 +420,7 @@ Returns a decoded object based on the given JSON `string`"},
 "yajl.load(fp)\n\n\
 Returns a decoded object based on the JSON read from the `fp` stream-like\n\
 object; *Note:* It is expected that `fp` supports the `read()` method"},
-    {"dump", (PyCFunctionWithKeywords)(py_dump), METH_VARARGS | METH_KEYWORDS,
+    {"dump", (PyCFunction)(py_dump), METH_VARARGS | METH_KEYWORDS,
 "yajl.dump(obj, fp [, indent=None])\n\n\
 Encodes the given `obj` and writes it to the `fp` stream-like object. \n\
 *Note*: It is expected that `fp` supports the `write()` method\n\
@@ -434,9 +430,6 @@ and object members will be pretty-printed with that indent level. \n\
 An indent level of 0 will only insert newlines. None (the default) \n\
 selects the most compact representation.\n\
 "},
-    /*
-     {"iterload", (PyCFunction)(py_iterload), METH_VARARGS, NULL},
-     */
     {"monkeypatch", (PyCFunction)(py_monkeypatch), METH_NOARGS,
 "yajl.monkeypatch()\n\n\
 Monkey-patches the yajl module into sys.modules as \"json\"\n\

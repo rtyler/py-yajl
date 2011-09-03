@@ -308,12 +308,12 @@ static PyObject * lowLevelStringAlloc(Py_ssize_t size)
 #ifdef IS_PYTHON3
     PyBytesObject * op = (PyBytesObject *)PyObject_MALLOC(sizeof(PyBytesObject) + size);
     if (op) {
-        PyObject_INIT_VAR(op, &PyBytes_Type, size);
+        (void) PyObject_INIT_VAR(op, &PyBytes_Type, size);
     }
 #else
     PyStringObject * op = (PyStringObject *)PyObject_MALLOC(sizeof(PyStringObject) + size);
     if (op) {
-        PyObject_INIT_VAR(op, &PyString_Type, size);
+        (void) PyObject_INIT_VAR(op, &PyString_Type, size);
         op->ob_shash = -1;
         op->ob_sstate = SSTATE_NOT_INTERNED;
     }
