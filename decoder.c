@@ -346,6 +346,9 @@ PyObject *py_yajldecoder_iternext(PyObject *self)
 
     PyObject *buffer = NULL;
     PyObject *result = NULL;
+#ifdef IS_PYTHON3
+    PyObject *bufferstring = NULL;
+#endif
 
     // return an object from the list if there is one available.
     //len = PySequence_Size(d->decoded_objects); 
@@ -366,15 +369,36 @@ PyObject *py_yajldecoder_iternext(PyObject *self)
             Py_XDECREF(buffer);
             return NULL;
         }
+
+#ifdef IS_PYTHON3
+        bufferstring = PyUnicode_AsUTF8String(buffer);
+        if (!bufferstring)
+            return NULL;
+#endif
+
+#ifdef IS_PYTHON3
+        if (PyBytes_Size(bufferstring) == 0) {
+            Py_XDECREF(buffer);
+            return NULL;
+        }
+#else
         if (PyString_Size(buffer) == 0) {
             Py_XDECREF(buffer);
             return NULL;
         }
+#endif
+
         Py_INCREF(buffer);
 
+#ifdef IS_PYTHON3
+        result = _internal_decode((_YajlDecoder *)d, PyBytes_AsString(bufferstring),
+                  PyBytes_Size(bufferstring));
+        Py_XDECREF(bufferstring);
+#else
         result = _internal_decode((_YajlDecoder *)d, PyString_AsString(buffer),
                   PyString_Size(buffer));
-
+#endif
+        Py_XDECREF(buffer);
         if (result == NULL) {
             // error set by _internal_decode
             return NULL;
@@ -468,16 +492,28 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
     // stream setup
     me->stream = stream;
     if (bufsize) {
+#ifdef IS_PYTHON3
+        if (!PyLong_Check(bufsize)) {
+#else
         if (!PyInt_Check(bufsize)) {
+#endif
             PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be a int"));
             return -1;
         }
-        if (PyInt_AsLong(bufsize) < 1) {
+#ifdef IS_PYTHON3
+        if (PyLong_AsLong(bufsize) < 1) {
+#else
+        if (!PyInt_Check(bufsize) < 1) {
+#endif
             PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be > 1"));
             return -1;
         }
     } else {
+#ifdef IS_PYTHON3
+        me->bufsize = PyLong_FromLong(512);
+#else
         me->bufsize = PyInt_FromLong(512);
+#endif
     }
 
     // reset method also initialises data structures
