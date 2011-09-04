@@ -243,7 +243,6 @@ Parse the contents of *buffer using the yajl json parser
 PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen)
 {
     yajl_status yrc;
-
     yrc = yajl_parse(self->parser, (const unsigned char *)(buffer), buflen);
 
     if (yrc != yajl_status_ok) {
@@ -252,13 +251,6 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
         return NULL;
     }
 
-    yrc = yajl_complete_parse(self->parser);
-
-    if (yrc != yajl_status_ok) {
-        PyErr_SetObject(PyExc_ValueError,
-                PyUnicode_FromString(yajl_status_to_string(yrc)));
-        return NULL;
-    }
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -288,11 +280,11 @@ External interface "decode"
 */
 PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args)
 {
-    //_YajlDecoder *decoder = (_YajlDecoder *)(self);
     char *buffer = NULL;
     PyObject *pybuffer = NULL;
     PyObject *result = NULL;
     Py_ssize_t buflen = 0;
+    yajl_status yrc;
 
     if (!PyArg_ParseTuple(args, "O", &pybuffer))
         return NULL;
@@ -329,13 +321,66 @@ PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args)
     }
 
     result = _internal_decode(self, buffer, (unsigned int)buflen);
-    if (result == NULL) {
-        Py_DECREF(pybuffer);
-        return NULL;
-    } else {
-        Py_DECREF(pybuffer);
-        return _fetchObject(self);
+    if (result != NULL) {
+        yrc = yajl_complete_parse(self->parser);
+        if (yrc != yajl_status_ok) {
+            PyErr_SetObject(PyExc_ValueError,
+                PyUnicode_FromString(yajl_status_to_string(yrc)));
+            return NULL;
+        }
+        result = _fetchObject(self);
     }
+    Py_DECREF(pybuffer);
+    return result; 
+}
+
+PyObject *py_yajldecoder_iter(PyObject *self)
+{
+    Py_INCREF(self);
+    return self;
+}
+
+PyObject *py_yajldecoder_iternext(PyObject *self) 
+{
+    _YajlDecoder *d = (_YajlDecoder *)self;
+
+    PyObject *buffer = NULL;
+    PyObject *result = NULL;
+
+    // return an object from the list if there is one available.
+    //len = PySequence_Size(d->decoded_objects); 
+    if (PySequence_Size(d->decoded_objects) != 0) {
+        return _fetchObject(d);
+    } 
+
+    // return NULL if stream is not set
+    if (!d->stream) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("no stream to iterate over"));
+        return NULL;
+    }
+
+    // while there are no complete objects keep trying to read from the stream
+    while (PySequence_Size(d->decoded_objects) < 1) {
+        buffer = PyObject_CallMethod(d->stream,"read","O",d->bufsize);
+        if (!buffer) {
+            Py_XDECREF(buffer);
+            return NULL;
+        }
+        if (PyString_Size(buffer) == 0) {
+            Py_XDECREF(buffer);
+            return NULL;
+        }
+        Py_INCREF(buffer);
+
+        result = _internal_decode((_YajlDecoder *)d, PyString_AsString(buffer),
+                  PyString_Size(buffer));
+
+        if (result == NULL) {
+            // error set by _internal_decode
+            return NULL;
+        }
+    }
+    return _fetchObject(d); 
 }
 
 /*
@@ -366,11 +411,12 @@ PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args)
 
     self->parser = yajl_alloc(&decode_callbacks,NULL, (void *)(self));
     yajl_config(self->parser,yajl_allow_comments,1);
-    yajl_config(self->parser,yajl_allow_partial_values,0);
+    yajl_config(self->parser,yajl_allow_partial_values,1);
     yajl_config(self->parser,yajl_dont_validate_strings,0);
     if (PyLong_AsUnsignedLongMask(self->allow_multiple_values) == 1) {
         yajl_config(self->parser,yajl_allow_multiple_values,1);
     }
+
     Py_INCREF(Py_None);
     return Py_None;
 }
@@ -392,10 +438,13 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
     PyObject *allow_multiple_values = NULL;
     PyObject *result = NULL;
     PyObject *stream = NULL;
+    PyObject *bufsize = NULL;
 
-    static char *kwlist[] = {"allow_multiple_values","stream",NULL};
+    static char *kwlist[] = {"allow_multiple_values","stream","bufsize",NULL};
 
-    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", kwlist, &allow_multiple_values, &stream)) {
+    if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OOO", kwlist, \
+                                &allow_multiple_values, &stream,\
+                                &bufsize)) {
         return -1;
     }
     
@@ -409,6 +458,7 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
         allow_multiple_values = Py_False;
     }
 
+
     // basic setup
     _YajlDecoder *me = (_YajlDecoder *)(self);
     me->allow_multiple_values = allow_multiple_values;
@@ -417,7 +467,18 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
     // stream setup
     me->stream = stream;
-    me->bufsize = PyInt_FromLong(1);
+    if (bufsize) {
+        if (!PyInt_Check(bufsize)) {
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be a int"));
+            return -1;
+        }
+        if (PyInt_AsLong(bufsize) < 1) {
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be > 1"));
+            return -1;
+        }
+    } else {
+        me->bufsize = PyInt_FromLong(512);
+    }
 
     // reset method also initialises data structures
     result = PyObject_CallMethod(self,"reset",NULL); 
@@ -431,20 +492,32 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
 void yajldecoder_dealloc(_YajlDecoder *self)
 {
+    // free pointer stack
     py_yajl_ps_free(self->elements);
-    py_yajl_ps_init(self->elements);
     py_yajl_ps_free(self->keys);
-    py_yajl_ps_init(self->keys);
+
+    // if we have decoded objects free those
     if (self->decoded_objects) {
         Py_XDECREF(self->decoded_objects);
+    }
+
+    // free the parser
+    if (self->parser) {
+        yajl_free(self->parser);
+    }
+
+    // free bufsize
+    if (self->bufsize) {
+        Py_XDECREF(self->bufsize);
+    }
+
+    // free stream
+    if (self->stream) {
+        Py_XDECREF(self->stream);
     }
 #ifdef IS_PYTHON3
     Py_TYPE(self)->tp_free((PyObject*)self);
 #else
     self->ob_type->tp_free((PyObject*)self);
 #endif
-
-    if (self->parser) {
-        yajl_free(self->parser);
-    }
 }
