@@ -91,8 +91,8 @@ static PyTypeObject YajlDecoderType = {
     0,                     /* tp_clear */
     0,                     /* tp_richcompare */
     0,                     /* tp_weaklistoffset */
-    0,                     /* tp_iter */
-    0,                     /* tp_iternext */
+    py_yajldecoder_iter,   /* tp_iter */
+    py_yajldecoder_iternext,    /* tp_iternext */
     yajldecoder_methods,  /* tp_methods */
     NULL,                 /* tp_members */
     0,                         /* tp_getset */
@@ -150,53 +150,25 @@ static PyTypeObject YajlEncoderType = {
     0,                         /* tp_alloc */
 };
 
-static PyObject *py_loads(PYARGS)
+static PyObject *py_loads(PyObject *self, PyObject *args)
 {
     PyObject *decoder = NULL;
-    PyObject *result = NULL;
     PyObject *pybuffer = NULL;
-    char *buffer = NULL;
-    Py_ssize_t buflen = 0;
-
-    if (!PyArg_ParseTuple(args, "O", &pybuffer))
-        return NULL;
-
-    Py_INCREF(pybuffer);
-
-    if (PyUnicode_Check(pybuffer)) {
-        if (!(result = PyUnicode_AsUTF8String(pybuffer))) {
-            Py_DECREF(pybuffer);
-            return NULL;
-        }
-        Py_DECREF(pybuffer);
-        pybuffer = result;
-        result = NULL;
-    }
-
-    if (PyString_Check(pybuffer)) {
-        if (PyString_AsStringAndSize(pybuffer, &buffer, &buflen)) {
-            Py_DECREF(pybuffer);
-            return NULL;
-        }
-    } else {
-        /* really seems like this should be a TypeError, but
-           tests/unit.py:ErrorCasesTests.test_None disagrees */
-        Py_DECREF(pybuffer);
-        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
+    PyObject *result = NULL;
+   
+    if (!PyArg_ParseTuple(args, "O", &pybuffer)) {
         return NULL;
     }
 
     decoder = PyObject_CallObject((PyObject *)(&YajlDecoderType), empty_tuple);
     if (decoder == NULL) {
+        PyErr_SetString(PyExc_ValueError, "unable to init decoder");
         return NULL;
     }
 
-    result = _internal_decode(
-            (_YajlDecoder *)decoder, buffer, (unsigned int)buflen);
-    if (result != NULL) {
-        result = _fetchObject((_YajlDecoder *)decoder);
-    }    
-    Py_DECREF(pybuffer);
+    Py_INCREF(pybuffer);
+    result = PyObject_CallMethod(decoder,"decode","O",pybuffer);
+    Py_XDECREF(pybuffer);
     Py_XDECREF(decoder);
     return result;
 }

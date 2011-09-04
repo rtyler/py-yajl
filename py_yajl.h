@@ -102,6 +102,8 @@ extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int
 extern PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args);
 extern Py_ssize_t decoder_len(_YajlDecoder *self);
 extern PyObject *_fetchObject(_YajlDecoder *self);
+extern PyObject *py_yajldecoder_iter(PyObject *self);
+extern PyObject *py_yajldecoder_iternext(PyObject *self);
 
 
 /*
