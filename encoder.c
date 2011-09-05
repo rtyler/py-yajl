@@ -142,7 +142,9 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             }
         }
         buffer[offset] = '\0';
-        return yajl_gen_raw_string(handle, (const char *)(buffer), (unsigned int)(offset));
+        status = yajl_gen_raw_string(handle, (const char *)(buffer), (unsigned int)(offset));
+        free(buffer);
+        return status;
     }
 #ifdef IS_PYTHON3
     if (PyBytes_Check(object)) {
