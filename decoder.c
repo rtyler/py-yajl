@@ -493,6 +493,11 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
     py_yajl_ps_init(me->keys); 
 
     // stream setup
+    if (!PyObject_HasAttrString(stream,"read")) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("stream object must have a read attribute"));
+        return -1;
+    }
+
     me->stream = stream;
     if (bufsize) {
 #ifdef IS_PYTHON3

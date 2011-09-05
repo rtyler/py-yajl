@@ -243,7 +243,6 @@ static PyObject *py_dumps(PYARGS)
     return result;
 }
 
-static PyObject *__read = NULL;
 static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
 {
     PyObject *decoder = NULL;
@@ -255,19 +254,16 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
 #endif
 
     if (!PyArg_ParseTuple(args, "O", &stream)) {
-        goto bad_type;
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a single stream object"));
+        return NULL;
     }
 
-    if (__read == NULL) {
-        __read = PyUnicode_FromString("read");
+    if (!PyObject_HasAttrString(stream,"read")) {
+        PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a single stream object"));
+        return NULL;
     }
 
-    if (!PyObject_HasAttr(stream, __read)) {
-        goto bad_type;
-    }
-
-    buffer = PyObject_CallMethodObjArgs(stream, __read, NULL);
-
+    buffer = PyObject_CallMethod(stream,"read",NULL);
     if (!buffer)
         return NULL;
 
@@ -283,23 +279,14 @@ static PyObject *_internal_stream_load(PyObject *args, unsigned int blocking)
     }
 
 #ifdef IS_PYTHON3
-    result = _internal_decode((_YajlDecoder *)decoder, PyBytes_AsString(bufferstring),
-                PyBytes_Size(bufferstring));
+    result = PyObject_CallMethod(decoder,"decode","O",bufferstring);
     Py_XDECREF(bufferstring);
 #else
-    result = _internal_decode((_YajlDecoder *)decoder, PyString_AsString(buffer),
-                  PyString_Size(buffer));
+    result = PyObject_CallMethod(decoder,"decode","O",buffer);
 #endif
-    if (result != NULL) {
-        result = _fetchObject((_YajlDecoder *)decoder);
-    }
     Py_XDECREF(decoder);
     Py_XDECREF(buffer);
     return result;
-
-bad_type:
-    PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a single stream object"));
-    return NULL;
 }
 
 static PyObject *py_load(PYARGS)
