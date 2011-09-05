@@ -316,8 +316,9 @@ static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsig
 
     buffer = _internal_encode((_YajlEncoder *)encoder, object, gen);
     PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
+    Py_XDECREF(buffer);
     Py_XDECREF(encoder);
-    return Py_True;
+    Py_RETURN_TRUE;
 
 bad_type:
     PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("Must pass a stream object"));
@@ -357,7 +358,7 @@ static PyObject *py_monkeypatch(PYARGS)
     PyObject *yajl = PyDict_GetItemString(modules, "yajl");
 
     if (!yajl) {
-        return Py_False;
+        Py_RETURN_FALSE;
     }
 
     PyDict_SetItemString(modules, "json_old", PyDict_GetItemString(modules, "json"));
@@ -365,7 +366,7 @@ static PyObject *py_monkeypatch(PYARGS)
 
     Py_XDECREF(sys);
     Py_XDECREF(modules);
-    return Py_True;
+    Py_RETURN_TRUE;
 }
 
 static struct PyMethodDef yajl_methods[] = {
