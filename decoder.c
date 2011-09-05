@@ -391,8 +391,6 @@ PyObject *py_yajldecoder_iternext(PyObject *self)
         }
 #endif
 
-        Py_INCREF(buffer);
-
 #ifdef IS_PYTHON3
         result = _internal_decode((_YajlDecoder *)d, PyBytes_AsString(bufferstring),
                   PyBytes_Size(bufferstring));
