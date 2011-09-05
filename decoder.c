@@ -77,7 +77,6 @@ int PlaceObject(_YajlDecoder *self, PyObject *object)
          * numbers, not dict/list.
          */
         PyList_Append(self->decoded_objects,object);
-        Py_DECREF(object);
         return success;
     }
     return _PlaceObject(self, py_yajl_ps_current(self->elements), object);
@@ -272,6 +271,7 @@ PyObject *_fetchObject(_YajlDecoder *self)
  
     result = PySequence_GetItem(self->decoded_objects,0);
     PySequence_DelItem(self->decoded_objects,0);
+    Py_DECREF(result);
     return result;
 }
 
@@ -315,23 +315,26 @@ PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args)
     }
 
     if (!buflen) {
+        Py_DECREF(pybuffer);
         PyErr_SetObject(PyExc_ValueError,
                 PyUnicode_FromString("Cannot parse an empty buffer"));
         return NULL;
     }
 
     result = _internal_decode(self, buffer, (unsigned int)buflen);
-    if (result != NULL) {
-        yrc = yajl_complete_parse(self->parser);
-        if (yrc != yajl_status_ok) {
-            PyErr_SetObject(PyExc_ValueError,
-                PyUnicode_FromString(yajl_status_to_string(yrc)));
-            return NULL;
-        }
-        result = _fetchObject(self);
+    if (!result) {
+        Py_DECREF(pybuffer);
+        return NULL;
     }
-    Py_DECREF(pybuffer);
-    return result; 
+
+    yrc = yajl_complete_parse(self->parser);
+    if (yrc != yajl_status_ok) {
+        PyErr_SetObject(PyExc_ValueError,
+            PyUnicode_FromString(yajl_status_to_string(yrc)));
+        return NULL;
+    }
+    result = _fetchObject(self);
+    return result;
 }
 
 PyObject *py_yajldecoder_iter(PyObject *self)
