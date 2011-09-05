@@ -249,9 +249,7 @@ PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen
                 PyUnicode_FromString(yajl_status_to_string(yrc)));
         return NULL;
     }
-
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 /*
@@ -442,8 +440,7 @@ PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args)
         yajl_config(self->parser,yajl_allow_multiple_values,1);
     }
 
-    Py_INCREF(Py_None);
-    return Py_None;
+    Py_RETURN_NONE;
 }
 
 /*
@@ -480,6 +477,7 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
         }
     } else {
         // default to false
+        Py_INCREF(Py_False);
         allow_multiple_values = Py_False;
     }
 
