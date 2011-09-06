@@ -507,13 +507,14 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
             return -1;
         }
 #ifdef IS_PYTHON3
-        if (PyLong_AsLong(bufsize) < 1) {
+        if (!(PyLong_AsLong(bufsize) >= 1)) {
 #else
-        if (!PyInt_Check(bufsize) < 1) {
+        if (!(PyInt_AsLong(bufsize) >=  1)) {
 #endif
-            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be > 1"));
+            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be >= 1"));
             return -1;
         }
+        me->bufsize = bufsize;
     } else {
 #ifdef IS_PYTHON3
         me->bufsize = PyLong_FromLong(512);
