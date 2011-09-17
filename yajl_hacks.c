@@ -30,7 +30,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include <yajl_encode.h>
-
+#include <string.h>
 
 /*
  * This code was yanked largely from yajl_gen.c
@@ -50,8 +50,8 @@ typedef enum {
 
 struct yajl_gen_t
 {
+    unsigned int flags;
     unsigned int depth;
-    unsigned int pretty;
     const char * indentString;
     yajl_gen_state state[YAJL_MAX_DEPTH];
     yajl_print_t print;
@@ -64,21 +64,29 @@ struct yajl_gen_t
     if (g->state[g->depth] == yajl_gen_map_key ||               \
         g->state[g->depth] == yajl_gen_in_array) {              \
         g->print(g->ctx, ",", 1);                               \
-        if (g->pretty) g->print(g->ctx, "\n", 1);               \
+        if ((g->flags & yajl_gen_beautify)) g->print(g->ctx, "\n", 1);               \
     } else if (g->state[g->depth] == yajl_gen_map_val) {        \
         g->print(g->ctx, ":", 1);                               \
-        if (g->pretty) g->print(g->ctx, " ", 1);                \
+        if ((g->flags & yajl_gen_beautify)) g->print(g->ctx, " ", 1);                \
    } 
 
 #define INSERT_WHITESPACE                                               \
-    if (g->pretty) {                                                    \
+    if ((g->flags & yajl_gen_beautify)) {                                                    \
         if (g->state[g->depth] != yajl_gen_map_val) {                   \
             unsigned int _i;                                            \
             for (_i=0;_i<g->depth;_i++)                                 \
-                g->print(g->ctx, g->indentString,                       \
-                         strlen(g->indentString));                      \
+                g->print(g->ctx,                                        \
+                         g->indentString,                               \
+                         (unsigned int)strlen(g->indentString));        \
         }                                                               \
     }
+
+#define ENSURE_NOT_KEY \
+    if (g->state[g->depth] == yajl_gen_map_key ||       \
+        g->state[g->depth] == yajl_gen_map_start)  {    \
+        return yajl_gen_keys_must_be_strings;           \
+    }                                                   \
+
 /* check that we're not complete, or in error state.  in a valid state
  * to be generating */
 #define ENSURE_VALID_STATE \
@@ -87,6 +95,12 @@ struct yajl_gen_t
     } else if (g->state[g->depth] == yajl_gen_complete) {   \
         return yajl_gen_generation_complete;                \
     }
+
+#define INCREMENT_DEPTH \
+    if (++(g->depth) >= YAJL_MAX_DEPTH) return yajl_max_depth_exceeded;
+
+#define DECREMENT_DEPTH \
+  if (--(g->depth) >= YAJL_MAX_DEPTH) return yajl_gen_error;
 
 #define APPENDED_ATOM \
     switch (g->state[g->depth]) {                   \
@@ -108,10 +122,10 @@ struct yajl_gen_t
     }                                               \
 
 #define FINAL_NEWLINE                                        \
-    if (g->pretty && g->state[g->depth] == yajl_gen_complete) \
-        g->print(g->ctx, "\n", 1);        
+    if ((g->flags & yajl_gen_beautify) && g->state[g->depth] == yajl_gen_complete) \
+        g->print(g->ctx, "\n", 1);
 
-yajl_gen_status yajl_gen_raw_string(yajl_gen g, const unsigned char * str, unsigned int len)
+yajl_gen_status yajl_gen_raw_string(yajl_gen g, const char * str, size_t len)
 {
     ENSURE_VALID_STATE; INSERT_SEP; INSERT_WHITESPACE;
     g->print(g->ctx, "\"", 1);
