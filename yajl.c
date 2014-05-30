@@ -339,6 +339,7 @@ static PyObject *_internal_stream_dump(PyObject *object, PyObject *stream, unsig
     buffer = _internal_encode((_YajlEncoder *)encoder, object, config);
     PyObject_CallMethodObjArgs(stream, __write, buffer, NULL);
     Py_XDECREF(encoder);
+    Py_XDECREF(buffer);
     return Py_True;
 
 bad_type:
