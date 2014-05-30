@@ -142,7 +142,9 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             }
         }
         buffer[offset] = '\0';
-        return yajl_gen_raw_string(handle, (const unsigned char *)(buffer), (unsigned int)(offset));
+        status = yajl_gen_raw_string(handle, (const unsigned char *)(buffer), (unsigned int)(offset));
+        free(buffer);
+        return status;
     }
 #ifdef IS_PYTHON3
     if (PyBytes_Check(object)) {
@@ -238,6 +240,9 @@ static yajl_gen_status ProcessObject(_YajlEncoder *self, PyObject *object)
             }
 
             status = ProcessObject(self, newKey);
+            if (key != newKey) {
+                Py_XDECREF(newKey);
+            }
             if (status == yajl_gen_in_error_state) return status;
             if (status == yajl_max_depth_exceeded) goto exit;
 
