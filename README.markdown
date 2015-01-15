@@ -15,7 +15,7 @@ py-yajl fully supports Python 2.4-2.6 and Python 3.
 
 Building py-yajl
 -----------------
-Please refer to `BUILDING.markdon`
+Please refer to `BUILDING.markdown`
 
 Authors
 ---------
