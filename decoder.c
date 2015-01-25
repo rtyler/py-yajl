@@ -365,7 +365,7 @@ PyObject *py_yajldecoder_iternext(PyObject *self)
 
     // while there are no complete objects keep trying to read from the stream
     while (PySequence_Size(d->decoded_objects) < 1) {
-        buffer = PyObject_CallMethod(d->stream,"read","O",d->bufsize);
+        buffer = PyObject_CallMethod(d->stream,d->read_fn,"O",d->bufsize);
         if (!buffer) {
             Py_XDECREF(buffer);
             return NULL;
@@ -490,10 +490,15 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
 
     // stream setup
     if (stream) {
+        me->read_fn = "read";
         if (!PyObject_HasAttrString(stream,"read")) {
-            PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("stream object must have a read attribute"));
-            return -1;
+            if (!PyObject_HasAttrString(stream,"recv")) {
+                PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("stream object must have a read or recv attribute"));
+                return -1;
+            }
+            me->read_fn = "recv";
         }
+        Py_INCREF(stream);
     }
 
     me->stream = stream;

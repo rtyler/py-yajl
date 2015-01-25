@@ -55,7 +55,7 @@ typedef struct {
     PyObject *stream;
     PyObject *bufsize;
     yajl_handle parser;
-    
+    char *read_fn;
 
 } _YajlDecoder;
 
