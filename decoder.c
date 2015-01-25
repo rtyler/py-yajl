@@ -274,6 +274,61 @@ PyObject *_fetchObject(_YajlDecoder *self)
 }
 
 /*
+ * Decode a chunk of input at a time
+ */
+PyObject *py_yajldecoder_iterdecode(_YajlDecoder *self, PyObject *args)
+{
+    char *buffer = NULL;
+    PyObject *pybuffer = NULL;
+    PyObject *result = NULL;
+    Py_ssize_t buflen = 0;
+
+    if (!PyArg_ParseTuple(args, "O", &pybuffer))
+        return NULL;
+
+    Py_INCREF(pybuffer);
+
+    if (PyUnicode_Check(pybuffer)) {
+        if (!(result = PyUnicode_AsUTF8String(pybuffer))) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+        Py_DECREF(pybuffer);
+        pybuffer = result;
+        result = NULL;
+    }
+
+    if (PyString_Check(pybuffer)) {
+        if (PyString_AsStringAndSize(pybuffer, &buffer, &buflen)) {
+            Py_DECREF(pybuffer);
+            return NULL;
+        }
+    } else {
+        /* really seems like this should be a TypeError, but
+           tests/unit.py:ErrorCasesTests.test_None disagrees */
+        Py_DECREF(pybuffer);
+        PyErr_SetString(PyExc_ValueError, "string or unicode expected");
+        return NULL;
+    }
+
+    if (!buflen) {
+        Py_DECREF(pybuffer);
+        Py_RETURN_NONE;
+    }
+
+    result = _internal_decode(self, buffer, (unsigned int)buflen);
+    if (!result) {
+        Py_DECREF(pybuffer);
+        return NULL;
+    }
+
+    Py_DECREF(pybuffer);
+    result = self->decoded_objects;
+    self->decoded_objects = PyList_New(0);
+    return result;
+}
+
+/*
 External interface "decode" 
 */
 PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args)
