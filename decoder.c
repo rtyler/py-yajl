@@ -574,6 +574,7 @@ int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs)
             PyErr_SetObject(PyExc_TypeError, PyUnicode_FromString("bufsize must be >= 1"));
             return -1;
         }
+        Py_INCREF(bufsize);
         me->bufsize = bufsize;
     } else {
 #ifdef IS_PYTHON3
