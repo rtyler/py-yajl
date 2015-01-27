@@ -35,11 +35,12 @@
 
 #include <Python.h>
 #include <yajl/yajl_gen.h>
+#include <yajl/yajl_parse.h>
 #include "ptrstack.h"
 
 #if PY_MAJOR_VERSION >= 3
 #define IS_PYTHON3
-#define PyString_AsStringAndSize 	PyBytes_AsStringAndSize
+#define PyString_AsStringAndSize	PyBytes_AsStringAndSize
 #define PyString_Check				PyBytes_Check
 #endif
 
@@ -49,6 +50,12 @@ typedef struct {
     py_yajl_bytestack elements;
     py_yajl_bytestack keys;
     PyObject *root;
+    PyObject *decoded_objects;
+    PyObject *allow_multiple_values;
+    PyObject *stream;
+    PyObject *bufsize;
+    yajl_handle parser;
+    char *read_fn;
 
 } _YajlDecoder;
 
@@ -88,10 +95,16 @@ enum { failure, success };
 /*
  * Methods defined for the YajlDecoder type in decoder.c
  */
-extern PyObject *py_yajldecoder_decode(PYARGS);
-extern int yajldecoder_init(PYARGS);
+extern PyObject *py_yajldecoder_decode(_YajlDecoder *self, PyObject *args);
+extern int yajldecoder_init(PyObject *self, PyObject *args, PyObject *kwargs);
 extern void yajldecoder_dealloc(_YajlDecoder *self);
 extern PyObject *_internal_decode(_YajlDecoder *self, char *buffer, unsigned int buflen);
+extern PyObject *py_yajldecoder_reset(_YajlDecoder *self,PyObject *args);
+extern Py_ssize_t decoder_len(_YajlDecoder *self);
+extern PyObject *_fetchObject(_YajlDecoder *self);
+extern PyObject *py_yajldecoder_iter(PyObject *self);
+extern PyObject *py_yajldecoder_iternext(PyObject *self);
+extern PyObject *py_yajldecoder_iterdecode(_YajlDecoder *self, PyObject *args);
 
 
 /*
@@ -101,7 +114,7 @@ extern PyObject *py_yajlencoder_encode(PYARGS);
 extern PyObject* py_yajlencoder_default(PYARGS);
 extern int yajlencoder_init(PYARGS);
 extern void yajlencoder_dealloc(_YajlEncoder *self);
-extern PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen_config config);
+extern PyObject *_internal_encode(_YajlEncoder *self, PyObject *obj, yajl_gen gen);
 
 #endif
 
