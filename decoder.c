@@ -323,8 +323,12 @@ PyObject *py_yajldecoder_iterdecode(_YajlDecoder *self, PyObject *args)
     }
 
     Py_DECREF(pybuffer);
+    Py_INCREF(self->decoded_objects);
     result = self->decoded_objects;
-    self->decoded_objects = PyList_New(0);
+    if (PySequence_Size(self->decoded_objects) > 0) {
+        Py_DECREF(self->decoded_objects);
+        self->decoded_objects = PyList_New(0);
+    }
     return result;
 }
 
