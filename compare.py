@@ -14,6 +14,10 @@ try:
     import json
 except ImportError:
     json = None
+try:
+    import ujson
+except ImportError:
+    ujson = None
 
 default_data = {
     "name": "Foo",
@@ -54,6 +58,8 @@ if simplejson:
     contenders.append(('simplejson', (simplejson.dumps, simplejson.loads)))
 if json:
     contenders.append(('stdlib json', (json.dumps, json.loads)))
+if ujson:
+    contenders.append(('ujson', (ujson.dumps, ujson.loads)))    
 
 for name, args in contenders:
     test(*args)
