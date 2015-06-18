@@ -54,6 +54,8 @@ if simplejson:
     contenders.append(('simplejson', (simplejson.dumps, simplejson.loads)))
 if json:
     contenders.append(('stdlib json', (json.dumps, json.loads)))
+if ujson:
+    contenders.append(('ujson', (ujson.dumps, ujson.loads)))    
 
 for name, args in contenders:
     test(*args)
