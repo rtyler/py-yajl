@@ -14,6 +14,10 @@ try:
     import json
 except ImportError:
     json = None
+try:
+    import ujson
+except ImportError:
+    ujson = None
 
 default_data = {
     "name": "Foo",
